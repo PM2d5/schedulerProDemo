@@ -165,8 +165,10 @@
                         }
                         
                         draggedEvent.startDate = endPlusPrepare;
+                        console.log("draggedEvent",draggedEvent)
                         context.startDate = endPlusPrepare;
-                        context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
+                        console.log("context",context)
                         pushTimes++;
                         console.log(1)
                     } 
@@ -183,7 +185,7 @@
                         }
                         draggedEvent.startDate = endPlusPrepare;
                         context.startDate = endPlusPrepare;
-                        context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
                         pushTimes++;
                         console.log(2)
                     }
@@ -203,16 +205,16 @@
                     let startMinusPrepare = DateHelper.add(eventsSameRes[i].startDate,eventsSameRes[i].prepareTime?-eventsSameRes[i].prepareTime:0,'minutes')
                     if (pullTimes == 0){ // 第一次只要判断被拖拽工序的结束时间是否在重叠工序的准备时间以内
                         if (DateHelper.betweenLesser(context.endDate,startMinusPrepare,eventsSameRes[i].startDate)){
-                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
-                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
+                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
                             pullTimes++;
                         }
                     } else { // 第二次以后要判断重叠工序的结束时间是否在被拖拽工序的准备时间以内，是的话还是往回拉
                         if (DateHelper.intersectSpans(context.startDate,context.endDate,eventsSameRes[i].startDate,endPlusPrepare)){
-                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
-                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
+                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
                             pullTimes++;
                         }
                     }
