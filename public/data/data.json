@@ -105,6 +105,171 @@
                 "deliveryDate": "2020-11-26", 
                 "productLine": "未分配",
                 "prepareTime": 30
+            },
+            {
+                "id": 7,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "山东华凌",
+                "model": "J-70",
+                "eventColor" : "red",
+                "num": 8000,
+                "batchCode": 20110588,
+                "vanNum": 38,
+                "deliveryDate": "2020-11-28", 
+                "productLine": "5#",
+                "prepareTime": 30
+            },
+            {
+                "id": 8,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "宝胜科技",
+                "model": "J-70",
+                "eventColor" : "red",
+                "num": 10000,
+                "batchCode": 20110566,
+                "vanNum": 46,
+                "deliveryDate": "2020-11-26", 
+                "productLine": "5#",
+                "prepareTime": 30
+            },
+            {
+                "id": 9,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "江苏中利集团",
+                "model": "J-70",
+                "eventColor" : "red",
+                "num": 2200,
+                "batchCode": 20110567,
+                "vanNum": 21,
+                "deliveryDate": "2020-11-28", 
+                "productLine": "5#",
+                "prepareTime": 30
+            },
+            {
+                "id": 10,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "江苏中利集团",
+                "model": "J-70",
+                "eventColor" : "red",
+                "num": 4800,
+                "batchCode": 20110568,
+                "vanNum": 45,
+                "deliveryDate": "2020-11-28", 
+                "productLine": "5#",
+                "prepareTime": 30
+            },
+            {
+                "id": 11,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "江苏中利集团",
+                "model": "7029",
+                "eventColor" : "red",
+                "num": 5000,
+                "batchCode": 20110569,
+                "vanNum": 51,
+                "deliveryDate": "2020-11-30", 
+                "productLine": "未分配",
+                "prepareTime": 30
+            },
+            {
+                "id": 12,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "江苏中利集团",
+                "model": "7029",
+                "eventColor" : "red",
+                "num": 6000,
+                "batchCode": 20110570,
+                "vanNum": 58,
+                "deliveryDate": "2020-11-30", 
+                "productLine": "未分配",
+                "prepareTime": 30
+            },
+            {
+                "id": 13,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "上海金丰电缆",
+                "model": "V-90-LF(耐晒等级8级)",
+                "eventColor" : "red",
+                "num": 7500,
+                "batchCode": 20110571,
+                "vanNum": 66,
+                "deliveryDate": "2020-12-03", 
+                "productLine": "6#",
+                "prepareTime": 30
+            },
+            {
+                "id": 14,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "上海金丰电缆",
+                "model": "V-90-LF(耐晒等级8级)",
+                "eventColor" : "red",
+                "num": 4200,
+                "batchCode": 20110572,
+                "vanNum": 35,
+                "deliveryDate": "2020-12-05", 
+                "productLine": "6#",
+                "prepareTime": 30
+            },
+            {
+                "id": 15,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "上海金丰电缆",
+                "model": "V-90-LF(耐晒等级8级)",
+                "eventColor" : "red",
+                "num": 800,
+                "batchCode": 20110573,
+                "vanNum": 1,
+                "deliveryDate": "2020-12-06", 
+                "productLine": "6#",
+                "prepareTime": 30
+            },
+            {
+                "id": 16,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "山东华凌",
+                "model": "TY-202",
+                "eventColor" : "red",
+                "num": 1200,
+                "batchCode": 20110574,
+                "vanNum": 1,
+                "deliveryDate": "2020-12-11", 
+                "productLine": "未分配",
+                "prepareTime": 30
+            },
+            {
+                "id": 17,
+                "name": "",
+                "startDate" : "",
+                "endDate"   : "",
+                "client": "浙江大顺电线",
+                "model": "7001-DF(DSCL02-0009)",
+                "eventColor" : "red",
+                "num": 5000,
+                "batchCode": 20110674,
+                "vanNum": 51,
+                "deliveryDate": "2020-12-11", 
+                "productLine": "未分配",
+                "prepareTime": 30
             }
         ]
     },
@@ -138,6 +303,61 @@
             {
                 "id"       : 6,
                 "event"    : 6,
+                "resource" : 10
+            },
+            {
+                "id"       : 7,
+                "event"    : 7,
+                "resource" : 3
+            },
+            {
+                "id"       : 8,
+                "event"    : 8,
+                "resource" : 3
+            },
+            {
+                "id"       : 9,
+                "event"    : 9,
+                "resource" : 3
+            },
+            {
+                "id"       : 10,
+                "event"    : 10,
+                "resource" : 3
+            },
+            {
+                "id"       : 11,
+                "event"    : 11,
+                "resource" : 10
+            },
+            {
+                "id"       : 12,
+                "event"    : 12,
+                "resource" : 10
+            },
+            {
+                "id"       : 13,
+                "event"    : 13,
+                "resource" : 4
+            },
+            {
+                "id"       : 14,
+                "event"    : 14,
+                "resource" : 4
+            },
+            {
+                "id"       : 15,
+                "event"    : 15,
+                "resource" : 4
+            },
+            {
+                "id"       : 16,
+                "event"    : 16,
+                "resource" : 10
+            },
+            {
+                "id"       : 17,
+                "event"    : 17,
                 "resource" : 10
             }
         ]
