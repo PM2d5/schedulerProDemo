@@ -4,12 +4,12 @@
 <template>
     <header class="app-header">
         <h1><a :href="link">{{ $props.title }}</a></h1>
-        <styles-combo v-show="this.$route.path==='/'"/>
+        <!-- <styles-combo v-show="this.$route.path==='/'"/>
         <colors-combo v-show="this.$route.path==='/'"/>
         <ul class="nav nav-pills justify-content-end">
             <li class="nav-item"><router-link class="nav-link" active-class="active" to="/" exact>Home</router-link></li>
             <li class="nav-item"><router-link class="nav-link" active-class="active" to="/tasks">Tasks</router-link></li>
-        </ul>
+        </ul> -->
         <!-- <locale-button /> -->
         <fullscreen-button></fullscreen-button>
     </header>
@@ -28,8 +28,8 @@
         },
         components : {
             FullscreenButton,
-            ColorsCombo,
-            StylesCombo
+            // ColorsCombo,
+            // StylesCombo
         }
     } // exports the header components
 </script>

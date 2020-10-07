@@ -2,16 +2,16 @@
  *- Configuration for the scheduler
  */
 import {SchedulerPro,DateHelper, EventStore, DependencyStore} from 'bryntum-schedulerpro';;
-import moment from 'moment'
 
+const now = DateHelper.parse('2020-11-18 08:00','YYYY-MM-DD HH:mm');
 
 export default {
 
     minHeight        : '20em',
-    // startDate        : moment().subtract(12,'hour').format("YYYY-MM-DD HH:mm"),
-    // endDate          : moment().add(48,'hour').format("YYYY-MM-DD HH:mm"),
-    startDate  : '2020-11-17 20:00',
-    endDate    : '2020-11-20 08:00',
+    startDate  : DateHelper.format(DateHelper.add(now,-12,'hours'),'YYYY-MM-DD HH:mm'),
+    endDate: DateHelper.format(DateHelper.add(now,48,'hours'),'YYYY-MM-DD HH:mm'),
+    // startDate  : '2020-11-17 20:00',
+    // endDate    : '2020-11-20 08:00',
     // viewPreset       : 'hourAndDay',
     viewPreset                : {
         displayDateFormat : 'H:mm',
@@ -55,8 +55,8 @@ export default {
         },
         
         eventDragCreate: false,
-        dependencies: true,
-        dependencyEdit: true,
+        dependencies: false,
+        dependencyEdit: false,
         // nonWorkingTime : true,
         eventTooltip : {
             template : data => {
@@ -94,14 +94,21 @@ export default {
                         <span class="b-sch-event-title">准备时间：</span>
                         <span>${event.prepareTime}分钟</span>
                     </div>
+                    <div>
+                        <span class="b-sch-event-title">状态：</span>
+                        <span>${event.state}</span>
+                    </div>
                     ${data.startClockHtml}
                     ${data.endClockHtml}
                 `;
             }
         },
         taskEdit :{
+            
             items:{
                 generalTab: {
+                    dateFormat: 'LT',
+                    timeFormat: 'HH:mm',
                     items: {
                         nameField: false,
                         resourcesField: false,
@@ -113,22 +120,19 @@ export default {
                 predecessorsTab: false,
                 successorsTab: false
             }
-        }
-        // eventDrag : {
-        //     validatorFn({ draggedRecords, newResource }) {
-        //         const
-        //             task    = draggedRecords[0],
-        //             isValid = task.type === 'Fixed' ||
-        //                 // Only C-suite people can play Golf
-        //                 (task.type === 'Golf' && ['CEO', 'CTO'].includes(newResource.role)) ||
-        //                 // Tasks that have type defined cannot be assigned to another resource type
-        //                 !(task.type && newResource.role !== task.resource.role);
-        //         return {
-        //             valid   : newResource.available && isValid,
-        //             message : !newResource.available ? newResource.statusMessage : (!isValid ? task.dragValidationText : '')
-        //         };
-        //     },
-        // },
+        },
+        eventDrag : {
+            validatorFn({ startDate }) {
+                if (DateHelper.compare(startDate,now)<0){
+                    return {
+                        valid : false,
+                        message: `<span style="color:red">开始时间不能早于当前时间</span>`
+                    };
+                } else {
+                    return true;
+                }
+            },
+        },
     },
 
     columns : [

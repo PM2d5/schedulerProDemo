@@ -29,7 +29,8 @@
                 "deliveryDate": "2020-11-21", 
                 "productLine": "3#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 2,
@@ -44,7 +45,8 @@
                 "deliveryDate": "2020-11-25", 
                 "productLine": "3#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 3,
@@ -59,7 +61,8 @@
                 "deliveryDate": "2020-11-23", 
                 "productLine": "11#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 4,
@@ -74,7 +77,8 @@
                 "deliveryDate": "2020-11-30", 
                 "productLine": "11#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 5,
@@ -89,7 +93,8 @@
                 "deliveryDate": "2020-11-26", 
                 "productLine": "21#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 6,
@@ -104,7 +109,8 @@
                 "deliveryDate": "2020-11-26", 
                 "productLine": "未分配",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 7,
@@ -119,7 +125,8 @@
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 8,
@@ -134,7 +141,8 @@
                 "deliveryDate": "2020-11-26", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 9,
@@ -149,7 +157,8 @@
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 10,
@@ -164,7 +173,8 @@
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 11,
@@ -179,7 +189,8 @@
                 "deliveryDate": "2020-11-30", 
                 "productLine": "未分配",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 12,
@@ -194,7 +205,8 @@
                 "deliveryDate": "2020-11-30", 
                 "productLine": "未分配",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 13,
@@ -209,7 +221,8 @@
                 "deliveryDate": "2020-12-03", 
                 "productLine": "6#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 14,
@@ -224,7 +237,8 @@
                 "deliveryDate": "2020-12-05", 
                 "productLine": "6#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 15,
@@ -239,7 +253,8 @@
                 "deliveryDate": "2020-12-06", 
                 "productLine": "6#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 16,
@@ -254,7 +269,8 @@
                 "deliveryDate": "2020-12-11", 
                 "productLine": "未分配",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
             {
                 "id": 17,
@@ -269,7 +285,8 @@
                 "deliveryDate": "2020-12-11", 
                 "productLine": "未分配",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待排产"
             },
 
             {
@@ -285,7 +302,8 @@
                 "deliveryDate": "2020-11-20", 
                 "productLine": "2#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待生产"
             },
             {
                 "id": 19,
@@ -300,7 +318,8 @@
                 "deliveryDate": "2020-11-18", 
                 "productLine": "3#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 20,
@@ -315,7 +334,8 @@
                 "deliveryDate": "2020-11-18", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "待生产"
             },
             {
                 "id": 21,
@@ -330,7 +350,8 @@
                 "deliveryDate": "2020-11-19", 
                 "productLine": "5#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 22,
@@ -345,7 +366,8 @@
                 "deliveryDate": "2020-11-19", 
                 "productLine": "6#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 23,
@@ -360,7 +382,8 @@
                 "deliveryDate": "2020-11-20", 
                 "productLine": "10#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 24,
@@ -375,7 +398,8 @@
                 "deliveryDate": "2020-11-21", 
                 "productLine": "11#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 25,
@@ -390,7 +414,8 @@
                 "deliveryDate": "2020-11-20", 
                 "productLine": "12#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 26,
@@ -405,7 +430,8 @@
                 "deliveryDate": "2020-11-18", 
                 "productLine": "21#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             },
             {
                 "id": 27,
@@ -420,7 +446,8 @@
                 "deliveryDate": "2020-11-19", 
                 "productLine": "21#",
                 "prepareTime": 30,
-                "durationUnit": "h"
+                "durationUnit": "h",
+                "state": "生产中"
             }
         ]
     },

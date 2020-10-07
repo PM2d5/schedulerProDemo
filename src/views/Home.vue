@@ -364,4 +364,24 @@
 
 </script>
 
+<style>
+.b-sch-event-wrap.b-drag-invalid .b-sch-event {
+  background-color: red !important;
+}
+.b-sch-tip-invalid .b-sch-tip-message:not(:empty):before {
+  margin-right: 0.5em;
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  color: red;
+  content: "\F071";
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+</style>
+
 <!-- eof -->
