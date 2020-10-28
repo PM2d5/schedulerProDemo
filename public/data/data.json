@@ -13,23 +13,25 @@
         "rows": [
             {
                 "id": 1,
-                "name": "产品1",
+                "name": "工序1",
                 "startDate" : "2020-10-27T09:00:00",
                 "endDate"   : "2020-10-27T12:00:00",
                 "eventColor" : "red",
-                "num": 10
+                "num": 10,
+                "prepareTime": 100
             },
             {
                 "id": 2,
-                "name": "产品2",
+                "name": "工序2",
                 "startDate" : "2020-10-27T13:00:00",
                 "endDate"   : "2020-10-27T17:00:00",
                 "eventColor" : "green",
-                "num": 10
+                "num": 10,
+                "prepareTime": 60
             },
             {
                 "id": 3,
-                "name": "产品3",
+                "name": "工序3",
                 "startDate" : "2020-10-27T09:00:00",
                 "endDate"   : "2020-10-27T12:00:00",
                 "eventColor" : "blue",
@@ -37,19 +39,21 @@
             },
             {
                 "id": 4,
-                "name": "产品4",
+                "name": "工序4",
                 "startDate" : "2020-10-28T08:00:00",
                 "endDate"   : "2020-10-28T11:00:00",
                 "eventColor" : "violet",
-                "num": 10
+                "num": 10,
+                "prepareTime": 50
             },
             {
                 "id": 5,
-                "name": "产品5",
+                "name": "工序5",
                 "startDate" : "2020-10-28T15:00:00",
                 "endDate"   : "2020-10-28T17:00:00",
                 "eventColor" : "indigo",
-                "num": 10
+                "num": 10,
+                "prepareTime": 120
             }
         ]
     },
