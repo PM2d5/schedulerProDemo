@@ -123,18 +123,18 @@
                 let previousEvents = []; // 同一行的上一级工序
                 if (temp.length>0){
                     for (let i in temp){
-                        previousEvents.push(events.filter(item=>item.id == temp[i].from && item.resourceId == context.newResource.id));
+                        previousEvents = previousEvents.concat(events.filter(item=>item.id == temp[i].from && item.resourceId == context.newResource.id));
                     }
                 }
                 temp = dependencies.filter(item=>item.from == draggedEvent.id);
-                let nextEvents = []; // 下同一行的一级工序
+                let nextEvents = []; // 同一行的下一级工序----改为同一行的所有下级工序
                 if (temp.length>0){
                     for (let i in temp){
-                        nextEvents.push(events.filter(item=>item.id == temp[i].to && item.resourceId == context.newResource.id))
+                        nextEvents = nextEvents.concat(events.filter(item=>item.id == temp[i].to && item.resourceId == context.newResource.id))
                     }
                 }
-                console.log("previous",previousEvents);
-                console.log("next",nextEvents);
+                // console.log("previous",previousEvents);
+                // console.log("next",nextEvents);
 
 
                 let pushTimes = 0;  // 往右推的次数
@@ -145,12 +145,44 @@
                     }
                     let endPlusPrepare = DateHelper.add(eventsSameRes[i].endDate,draggedEvent.prepareTime?draggedEvent.prepareTime:0,'minutes')
                     let startMinusPrepare = DateHelper.add(eventsSameRes[i].startDate,eventsSameRes[i].prepareTime?-eventsSameRes[i].prepareTime:0,'minutes')
-                    if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
-                        draggedEvent.startDate = endPlusPrepare;
-                        context.startDate = endPlusPrepare;
-                        context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                        pushTimes++;
-                    } 
+                    // console.log(context,eventsSameRes[i])
+                    if (previousEvents.length>0){
+                        if (previousEvents.some(item=>item.id == eventsSameRes[i].id && DateHelper.compare(context.endDate,eventsSameRes[i].startDate)==-1)){
+                            draggedEvent.startDate = endPlusPrepare;
+                            context.startDate = endPlusPrepare;
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            pushTimes++;
+                            console.log("1")
+                        } else if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
+                            draggedEvent.startDate = endPlusPrepare;
+                            context.startDate = endPlusPrepare;
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            pushTimes++;
+                            console.log("2")
+                        } 
+                    } else if (nextEvents.length>0){
+                        if (nextEvents.some(item=>item.id == eventsSameRes[i].id && DateHelper.compare(context.endDate,eventsSameRes[i].startDate)==1)){
+                            console.log(context.endDate,eventsSameRes[i].startDate)
+                            eventsSameRes[i].startDate = DateHelper.add(context.endDate,eventsSameRes[i].prepareTime?eventsSameRes[i].prepareTime:0,'minutes');
+                            pushTimes++;
+                            console.log("3")
+                        } else if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
+                            draggedEvent.startDate = endPlusPrepare;
+                            context.startDate = endPlusPrepare;
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            pushTimes++;
+                            console.log("4")
+                        } 
+                    } else {
+                        if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
+                            draggedEvent.startDate = endPlusPrepare;
+                            context.startDate = endPlusPrepare;
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                            pushTimes++;
+                            console.log("5")
+                        } 
+                    }
+                    
                 }
                 if (pushTimes>0){   // push和pull只能有一种
                     return;
