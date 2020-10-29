@@ -45,7 +45,6 @@
             // scheduler.on('eventDrop',this.onEventDrop);
             scheduler.on({
                 eventDrop: this.onEventDrop,
-                prio: -1
             })
         },
         methods : {
