@@ -116,71 +116,77 @@
                 let events = this.$refs.scheduler.schedulerInstance.eventStore.allRecords;
                 let dependencies = this.$refs.scheduler.schedulerInstance.dependencyStore.allRecords;
                 let eventsSameRes = events.filter(item=>item.resourceId == context.newResource.id); // 同一行的event
-                eventsSameRes.sort((a,b)=>DateHelper.compare(a.startDate,b.startDate)); // 按时间正向排序
+                
                 let draggedEvent = events.filter(item=>item.id == context.draggedRecords[0].id)[0]; // 被拖拽工序
-                // 如果被拖拽工序存在关联工序，获取与它同行的上一级和下一级
-                let temp = dependencies.filter(item=>item.to == draggedEvent.id);
-                let previousEvents = []; // 同一行的上一级工序
-                if (temp.length>0){
-                    for (let i in temp){
-                        previousEvents = previousEvents.concat(events.filter(item=>item.id == temp[i].from && item.resourceId == context.newResource.id));
+
+                // 将同行有关联的工序的lag设置为准备时间，不同行的lag还是改为上道工序的duration
+                let sameRowDependencies = dependencies.filter(item=>item.fromEvent.resourceId==item.toEvent.resourceId);
+                let diffRowDependencies = dependencies.filter(item=>item.fromEvent.resourceId!=item.toEvent.resourceId);
+                if (sameRowDependencies.length>0){
+                    for (let i in sameRowDependencies){
+                        sameRowDependencies[i].lag = sameRowDependencies[i].toEvent.prepareTime;
+                        sameRowDependencies[i].lagUnit = "minute"
                     }
                 }
-                temp = dependencies.filter(item=>item.from == draggedEvent.id);
-                let nextEvents = []; // 同一行的下一级工序----改为同一行的所有下级工序
-                if (temp.length>0){
-                    for (let i in temp){
-                        nextEvents = nextEvents.concat(events.filter(item=>item.id == temp[i].to && item.resourceId == context.newResource.id))
+                if (diffRowDependencies.length>0){
+                    for (let i in diffRowDependencies){
+                        diffRowDependencies[i].lag = 0 - diffRowDependencies[i].fromEvent.duration;
+                        diffRowDependencies[i].lagUnit = "day"
                     }
                 }
-                // console.log("previous",previousEvents);
-                // console.log("next",nextEvents);
-
-
+                eventsSameRes.sort((a,b)=>DateHelper.compare(a.startDate,b.startDate)); // 按时间正向排序
                 let pushTimes = 0;  // 往右推的次数
                 for (let i in eventsSameRes){
                     // 去掉自己
                     if (eventsSameRes[i].id == draggedEvent.id){
                         continue;
                     }
+
                     let endPlusPrepare = DateHelper.add(eventsSameRes[i].endDate,draggedEvent.prepareTime?draggedEvent.prepareTime:0,'minutes')
                     let startMinusPrepare = DateHelper.add(eventsSameRes[i].startDate,eventsSameRes[i].prepareTime?-eventsSameRes[i].prepareTime:0,'minutes')
-                    // console.log(context,eventsSameRes[i])
-                    if (previousEvents.length>0){
-                        if (previousEvents.some(item=>item.id == eventsSameRes[i].id && DateHelper.compare(context.endDate,eventsSameRes[i].startDate)==-1)){
-                            draggedEvent.startDate = endPlusPrepare;
-                            context.startDate = endPlusPrepare;
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                            pushTimes++;
-                            console.log("1")
-                        } else if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
-                            draggedEvent.startDate = endPlusPrepare;
-                            context.startDate = endPlusPrepare;
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                            pushTimes++;
-                            console.log("2")
-                        } 
-                    } else if (nextEvents.length>0){
-                        if (nextEvents.some(item=>item.id == eventsSameRes[i].id && DateHelper.compare(context.endDate,eventsSameRes[i].startDate)==1)){
-                            console.log(context.endDate,eventsSameRes[i].startDate)
-                            eventsSameRes[i].startDate = DateHelper.add(context.endDate,eventsSameRes[i].prepareTime?eventsSameRes[i].prepareTime:0,'minutes');
-                            pushTimes++;
-                            console.log("3")
-                        } else if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
-                            draggedEvent.startDate = endPlusPrepare;
-                            context.startDate = endPlusPrepare;
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                            pushTimes++;
-                            console.log("4")
-                        } 
-                    } else {
-                        if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
-                            draggedEvent.startDate = endPlusPrepare;
-                            context.startDate = endPlusPrepare;
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                            pushTimes++;
-                            console.log("5")
-                        } 
+                    let dragRowDependencies = sameRowDependencies.filter(item=>item.fromEvent.resourceId==context.newResource.id);
+                    if (DateHelper.intersectSpans(context.startDate,context.endDate,pushTimes>0?startMinusPrepare:eventsSameRes[i].startDate,endPlusPrepare)){
+                        // 如果是上下级，不做判断（因为是自动的）
+                        if (sameRowDependencies.length>0){
+                            
+                            let isSame = false;
+                            if (dragRowDependencies.length>0){
+                                for (let j in dragRowDependencies){
+                                    if (dragRowDependencies[j].from == draggedEvent.id && dragRowDependencies[j].to == eventsSameRes[i].id
+                                    || dragRowDependencies[j].to == draggedEvent.id && dragRowDependencies[j].from == eventsSameRes[i].id){
+                                        console.log('same')
+                                        isSame = true;
+                                        continue;
+                                    }
+                                }
+                                if(isSame){
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        draggedEvent.startDate = endPlusPrepare;
+                        context.startDate = endPlusPrepare;
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                        pushTimes++;
+                        console.log(1)
+                    } 
+                    else if (DateHelper.intersectSpans(draggedEvent.startDate,draggedEvent.endDate,startMinusPrepare,endPlusPrepare)){
+                        // 关联工序自动改变位置的情况，draggedEvent是自动改变后的位置
+                        if(dependencies.length>0){
+                            // 如果被拖拽工序不是关联工序，不做下面的判断
+                            let temp = dependencies.filter(item=>item.to == draggedEvent.id);
+                            if (temp.length==0){
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
+                        draggedEvent.startDate = endPlusPrepare;
+                        context.startDate = endPlusPrepare;
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
+                        pushTimes++;
+                        console.log(2)
                     }
                     
                 }
@@ -201,7 +207,6 @@
                             draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
                             context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.durationMS);
                             context.endDate = DateHelper.add(context.startDate,draggedEvent.durationMS)
-                            // console.log(context.startDate,context.endDate)
                             pullTimes++;
                         }
                     } else { // 第二次以后要判断重叠工序的结束时间是否在被拖拽工序的准备时间以内，是的话还是往回拉

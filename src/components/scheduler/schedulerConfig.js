@@ -46,6 +46,7 @@ export default {
         // eventDrag : {
         //     constrainDragToResource : true
         // },
+        eventDragCreate: false,
         dependencies: true,
         dependencyEdit: true,
         // nonWorkingTime : true,
