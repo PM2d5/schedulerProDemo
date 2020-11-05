@@ -1,6 +1,6 @@
 /*!
  *
- * Bryntum Scheduler Pro 1.0.2 (TRIAL VERSION)
+ * Bryntum Scheduler Pro 4.0.0 (TRIAL VERSION)
  *
  * Copyright(c) 2020 Bryntum AB
  * https://bryntum.com/contact
@@ -22,6 +22,20 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         detachListeners(name: string): void;
         resolveCallback(handler: string|Function, thisObj: object, enforceCallability?: boolean): object;
         setConfig(config: object): void;
+    }
+
+    // Singleton
+    export class GlobalEvents {        
+        static addListener(config: object, thisObj?: object, prio?: number): Function;
+        static hasListener(eventName: string): boolean;
+        static on(config: any, thisObj?: any): void;
+        static relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        static removeAllListeners(): void;
+        static removeListener(config: object, thisObj: object): void;
+        static resumeEvents(): void;
+        static suspendEvents(queue?: boolean): void;
+        static trigger(eventName: string, param?: object): boolean;
+        static un(config: any, thisObj: any): void;
     }
 
     type AjaxStoreConfig = {        
@@ -59,6 +73,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -96,18 +111,24 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         isEqual(value: any): boolean;
     }
 
+    type ModelConfig = {        
+        parentId: string|number;
+        parentIndex: number;
+    }
+
     export class Model implements TreeNode, ModelStm {        
         static autoExposeFields: boolean;
         static childrenField: string;
         static convertEmptyParentToLeaf: boolean|object;
-        static fieldMap: object;
+        static defaults: object[];
         static idField: string;
         allChildren: Model[];
         childLevel: number;
         children: Model[];
         descendantCount: number;
+        fieldMap: object;
         fieldNames: string[];
-        fields: any[];
+        fields: DataField[];
         firstChild: Model;
         firstStore: Store;
         hasGeneratedId: boolean;
@@ -132,9 +153,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         stm: StateTrackingManager;
         visibleDescendantCount: number;        
         constructor(data?: object, store?: Store, meta?: object);
-        static addField(field: string|object): void;
+        static addField(fieldDef: string|object): void;
         static asId(model: Model|string|number): string|number;
-        static getFieldDefinition(fieldName: string): object;
+        static getFieldDefinition(fieldName: string): DataField;
         static processField(fieldName: string, value: any): any;
         static removeField(fieldName: string): void;
         ancestorsExpanded(): void;
@@ -159,6 +180,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         remove(silent?: boolean): void;
         removeChild(childRecords: Model|Model[], isMove?: boolean, silent?: boolean): void;
         set(field: string|object, value: any, silent?: boolean): void;
+        toJSON(): object;
+        toString(): string;
         traverse(fn: any): void;
         traverseBefore(fn: any): void;
         traverseWhile(fn: Function): boolean;
@@ -194,12 +217,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     export class Store extends Base implements StoreChained, StoreCRUD, StoreFilter, StoreGroup, StoreRelation, StoreSearch, StoreSort, StoreState, StoreSum, StoreTree, Events, StoreStm {        
         static stores: Store[];
         allCount: number;
+        allRecords: Model[];
         autoCommit: boolean;
         changes: any;
         count: number;
         data: object[];
         filters: Collection;
         first: Model;
+        formattedJSON: string;
         groupers: object[];
         id: string|number;
         isChained: boolean;
@@ -207,6 +232,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         isGrouped: boolean;
         isSorted: boolean;
         isTree: boolean;
+        json: string;
         last: Model;
         leaves: Model[];
         modelClass: { new(data: object): Model };
@@ -237,7 +263,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         find(fn: Function): Model;
         findByField(field: any, value: any): any;
         findRecord(fieldName: string, value: any): Model;
-        forEach(fn: Function, thisObj: object): void;
+        forEach(fn: Function, thisObj?: object): void;
         getAt(index: number): Model;
         getById(id: Model|string|number): Model;
         getByInternalId(internalId: number): Model;
@@ -258,7 +284,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insert(index: number, records: Model|Model[]|object|object[], silent?: boolean): Model[];
         isAvailable(recordOrId: Model|string|number): boolean;
         isRecordInGroup(record: Model, groupValue: any): boolean;
-        isVisible(recordOrId: Model|string|number): boolean;
         loadChildren(parentRecord: Model): Promise<any>;
         makeChained(chainedFilterFn: Function, chainedFields: string[], config: object): Store;
         map(fn: Function): any[];
@@ -284,11 +309,111 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         sum(field: string, records: Model[]): number;
         suspendAutoCommit(): void;
         suspendEvents(queue?: boolean): void;
+        toJSON(): object[];
         toggleCollapse(idOrRecord: string|number|Model, collapse?: boolean): Promise<any>;
         traverse(fn: Function, topNode?: Model, skipTopNode?: boolean): void;
         traverseWhile(fn: Function, topNode?: Model, skipTopNode?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
+    }
+
+    type BooleanDataFieldConfig = {        
+        dataSource: string;
+        defaultValue: any;
+        name: string;
+        nullText: string;
+        nullValue: boolean;
+        nullable: boolean;
+        persist: boolean;
+        readOnly: boolean;
+    }
+
+    export class BooleanDataField extends DataField {        
+        constructor(config?: Partial<BooleanDataFieldConfig>);
+    }
+
+    type DataFieldConfig = {        
+        dataSource: string;
+        defaultValue: any;
+        name: string;
+        nullText: string;
+        nullValue: any;
+        nullable: boolean;
+        persist: boolean;
+        readOnly: boolean;
+    }
+
+    export class DataField extends Base {        
+        constructor(config?: Partial<DataFieldConfig>);
+        convert(value: any): any;
+        isEqual(first: any, second: any): boolean;
+        print(value: any): string;
+        printValue(value: any): string;
+        serialize(value: any, record: Model): any;
+    }
+
+    type DateDataFieldConfig = {        
+        dataSource: string;
+        dateFormat: string;
+        defaultValue: any;
+        format: string;
+        name: string;
+        nullText: string;
+        nullValue: any;
+        nullable: boolean;
+        persist: boolean;
+        readOnly: boolean;
+    }
+
+    export class DateDataField extends DataField {        
+        constructor(config?: Partial<DateDataFieldConfig>);
+    }
+
+    type IntegerDataFieldConfig = {        
+        dataSource: string;
+        defaultValue: any;
+        name: string;
+        nullText: string;
+        nullValue: number;
+        nullable: boolean;
+        persist: boolean;
+        readOnly: boolean;
+        rounding: string;
+    }
+
+    export class IntegerDataField extends DataField {        
+        constructor(config?: Partial<IntegerDataFieldConfig>);
+    }
+
+    type NumberDataFieldConfig = {        
+        dataSource: string;
+        defaultValue: any;
+        name: string;
+        nullText: string;
+        nullValue: number;
+        nullable: boolean;
+        persist: boolean;
+        precision: number;
+        readOnly: boolean;
+    }
+
+    export class NumberDataField extends DataField {        
+        constructor(config?: Partial<NumberDataFieldConfig>);
+    }
+
+    type StringDataFieldConfig = {        
+        dataSource: string;
+        defaultValue: any;
+        name: string;
+        nullText: string;
+        nullValue: string;
+        nullable: boolean;
+        persist: boolean;
+        readOnly: boolean;
+    }
+
+    export class StringDataField extends DataField {        
+        constructor(config?: Partial<StringDataFieldConfig>);
     }
 
     type StoreCRUDConfig = {        
@@ -412,6 +537,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         toggleCollapse(idOrRecord: string|number|Model, collapse?: boolean): Promise<any>;
     }
 
+    type TreeNodeConfig = {        
+        parentId: string|number;
+        parentIndex: number;
+    }
+
     export class TreeNode {        
         static convertEmptyParentToLeaf: boolean|object;
         allChildren: Model[];
@@ -428,6 +558,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         parentIndex: number;
         previousSiblingsTotalCount: number;
         visibleDescendantCount: number;        
+        constructor(config?: Partial<TreeNodeConfig>);
         ancestorsExpanded(): void;
         appendChild(childRecord: Model|Model[], silent?: boolean): Model|Model[];
         bubble(fn: Function): void;
@@ -468,7 +599,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disable(): void;
         enable(): void;
         forEachStore(fn: Function): void;
-        getStoreById(id: string|number): Store;
         hasStore(store: Store): boolean;
         redo(steps?: number): void;
         redoAll(): void;
@@ -619,11 +749,13 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static create(definition: object): Date;
         static daysInMonth(date: Date): number;
         static diff(start: Date, end: Date, unit?: string, fractional?: boolean): number;
+        static endOf(date: Date): void;
         static floor(time: Date, increment: string|number, base?: Date): void;
         static format(date: Date, format: string): string;
         static formatCount(count: number, unit: string): string;
         static formatDelta(delta: number, options?: object): void;
         static get(date: Date, unit: string): void;
+        static getDelta(delta: number, options?: object): object;
         static getDurationInUnit(start: Date, end: Date, unit: string): number;
         static getEndOfPreviousDay(date: Date, noNeedToClearTime: boolean): Date;
         static getFirstDateOfMonth(date: Date): Date;
@@ -636,6 +768,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static getTime(hours: number|Date, minutes?: number, seconds?: number, ms?: number): Date;
         static getTimeOfDay(date: Date): number;
         static getUnitToBaseUnitRatio(baseUnit: string, unit: string, acceptEstimate?: boolean): number;
+        static getWeekNumber(date: Date, weekStartDay: number): number[];
         static intersectSpans(date1Start: Date, date1End: Date, date2Start: Date, date2End: Date): boolean;
         static is24HourFormat(format: string): boolean;
         static isAfter(first: any, second: any): boolean;
@@ -764,7 +897,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         removeListener(config: object, thisObj: object): void;
         resumeEvents(): void;
         suspendEvents(queue?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
     }
 
@@ -785,6 +918,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static assertNumber(value: object, name: string): void;
         static assertType(value: object, type: string, name: string): void;
         static assign(dest: object, sources: object): object;
+        static assignIf(dest: object, sources: object): object;
         static cleanupProperties(object: object, keepNull?: boolean): object;
         static clone(value: any, handler?: Function): any;
         static copyProperties(dest: object, source: object, props: string[]): void;
@@ -818,13 +952,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static capitalize(string: string): string;
         static capitalizeFirstLetter(string: string): string;
         static createId(inString: any): string;
+        static decodeHtml(text: string): string;
+        static encodeHtml(html: string): string;
         static hyphenate(string: any): string;
         static joinPaths(paths: any[], pathSeparator?: string): string;
         static lowercaseFirstLetter(string: string): string;
         static safeJsonParse(string: string): object;
-        static safeJsonStringify(object: object): object;
+        static safeJsonStringify(object: object, replacer?: Function|string[]|number[], space?: string|number): object;
         static split(str: string, delimiter: string|RegExp): string[];
         static uncapitalize(string: string): string;
+        static xss(): void;
     }
 
     export class WidgetHelper {        
@@ -840,6 +977,10 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static showContextMenu(element: HTMLElement|number[], config: object): any|object;
         static toast(msg: string): void;
         static unmask(element: HTMLElement): void;
+    }
+
+    export class XMLHelper {        
+        static convertFromObject(obj: object, options?: object): string;
     }
 
     export class DragHelperContainer {
@@ -879,7 +1020,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
 
     export class NumberFormat {        
         constructor(config?: Partial<NumberFormatConfig>);
-        as(change: string|object): NumberFormat;
+        as(change: string|object, cacheAs?: string): NumberFormat;
         format(value: number): string;
         parse(value: string, strict?: boolean): number;
         parseStrict(value: string): number;
@@ -910,6 +1051,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static client(element: any, relativeTo?: HTMLElement, ignorePageScroll?: boolean): Rectangle;
         static content(element: any, relativeTo?: HTMLElement, ignorePageScroll?: boolean): Rectangle;
         static from(element: HTMLElement, relativeTo?: HTMLElement, ignorePageScroll?: boolean): Rectangle;
+        static fromScreen(element: HTMLElement, relativeTo?: HTMLElement): Rectangle;
         static inner(element: any, relativeTo?: HTMLElement, ignorePageScroll?: boolean): Rectangle;
         static union(rectangles: Rectangle[]): Rectangle;
         adjust(x: number, y: number, width: number, height: number): void;
@@ -923,7 +1065,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         inflate(amount: number): Rectangle;
         intersect(other: Rectangle, useBoolean?: boolean, allowZeroDimensions?: boolean): Rectangle|boolean;
         moveTo(x: number, y: number): void;
-        round(): void;
         roundPx(devicePixelRatio?: any): void;
         translate(x: number, y: number): void;
     }
@@ -965,7 +1106,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         scrollIntoView(element: HTMLElement|Rectangle, options?: object): Promise<any>;
         scrollTo(toX?: number, toY?: number, options?: object|boolean): Promise<any>;
         suspendEvents(queue?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
     }
 
@@ -975,6 +1116,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static trimLocale(locale: object, trimLocale: object): void;
     }
 
+    // Singleton
     export class LocaleManager {        
         static locale: string|object;
         static locales: object;
@@ -984,9 +1126,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static registerLocale(name: string, config: object): void;
     }
 
+    type LocalizableConfig = {        
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+    }
+
     export class Localizable {        
         localeManager: LocaleManager;        
+        constructor(config?: Partial<LocalizableConfig>);
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
+        updateLocalization(): void;
     }
 
     export class Delayable {
@@ -1006,13 +1156,15 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         removeListener(config: object, thisObj: object): void;
         resumeEvents(): void;
         suspendEvents(queue?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
     }
 
     type InstancePluginConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class InstancePlugin extends Base implements Localizable, Events {        
@@ -1020,6 +1172,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         localeManager: LocaleManager;        
         constructor(config?: Partial<InstancePluginConfig>);
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
         addListener(config: object, thisObj?: object, prio?: number): Function;
         doDisable(): void;
@@ -1030,8 +1183,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         removeListener(config: object, thisObj: object): void;
         resumeEvents(): void;
         suspendEvents(queue?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
+        updateLocalization(): void;
     }
 
     export class Override {        
@@ -1054,6 +1208,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         state: object;
     }
 
+    export class TreeWalker {        
+        firstChild(): Node|null;
+        lastChild(): Node|null;
+        nextNode(): Node|null;
+        nextSibling(): Node|null;
+        parentNode(): Node|null;
+        previousNode(): Node|null;
+        previousSibling(): Node|null;
+    }
+
     export class Bag {        
         count: number;
         values: object[];        
@@ -1064,7 +1228,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         get(id: any): object;
         includes(item: object|string|number): boolean;
         map(fn: Function, thisObj?: object): object[];
-        remove(toAdd: object|object[]): void;
+        remove(toRemove: object|object[]): void;
         sort(fn: Function): void;
     }
 
@@ -1172,6 +1336,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<MonthConfig>);
         eachDay(fn: Function): void;
         eachWeek(fn: Function): void;
+        getWeekNumber(date: Date): number[];
         getWeekStart(week: number|number[]): void;
     }
 
@@ -1206,6 +1371,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1275,6 +1442,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -1286,6 +1454,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1337,11 +1507,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class CalendarPanel {        
+        date: Date;
         endDate: Date;
         minColumnWidth: any;
         minRowHeight: any;
+        month: any;
         startDate: Date;        
         constructor(config?: Partial<CalendarPanelConfig>);
+        refresh(): void;
         updateDate(): void;
         updateWeekStartDay(): void;
     }
@@ -1355,6 +1528,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoComplete: string;
         badge: string;
         centered: boolean;
+        checked: boolean;
         clearable: boolean|object;
         cls: string|object;
         color: string;
@@ -1372,9 +1546,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -1385,6 +1562,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1395,7 +1574,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -1421,13 +1600,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
 
     export class Checkbox extends Field {        
         checked: boolean;
-        text: string;
+        name: string;
         value: string;        
         constructor(config?: Partial<CheckboxConfig>);
         check(): void;
         toggle(): void;
         uncheck(): void;
-        updateReadOnly(): void;
     }
 
     type ChipViewConfig = {        
@@ -1462,6 +1640,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         itemTpl: Function;
         items: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1507,7 +1687,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -1523,6 +1703,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -1533,9 +1714,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -1550,6 +1734,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1568,7 +1754,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -1586,7 +1772,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -1598,7 +1784,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class Combo extends PickerField {        
-        static queryLast: Symbol;
+        static queryLast: string;
         hidePickerOnSelect: any;
         isEmpty: boolean;
         record: Model[];
@@ -1630,6 +1816,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -1641,6 +1828,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1715,9 +1904,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -1729,6 +1921,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1746,7 +1940,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerFormat: string;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -1765,6 +1959,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         tooltip: string|object;
         triggers: object;
         value: string|Date;
+        weekStartDay: number;
         weight: number;
         width: string|number;
         x: number;
@@ -1781,6 +1976,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type DatePickerConfig = {        
+        activeDate: Date;
         editMonth: boolean;
         editOnHover: boolean;
         focusDisabledDates: boolean;
@@ -1791,6 +1987,89 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
 
     export class DatePicker {        
         constructor(config?: Partial<DatePickerConfig>);
+    }
+
+    type DateTimeFieldConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        autoComplete: string;
+        badge: string;
+        centered: boolean;
+        clearable: boolean|object;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        dateField: object;
+        defaultBindProperty: string;
+        disabled: boolean;
+        draggable: boolean|object;
+        editable: boolean;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
+        html: string;
+        htmlCls: string;
+        id: string;
+        inputAlign: string;
+        inputAttributes: object;
+        inputWidth: string|number;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        keyStrokeChangeDelay: number;
+        label: string;
+        labelCls: string|object;
+        labelWidth: string|number;
+        labels: object;
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        name: string;
+        owner: Widget;
+        placeholder: string;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        required: boolean;
+        revertOnEscape: boolean;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        timeField: object;
+        title: string;
+        tooltip: string|object;
+        triggers: object;
+        value: string;
+        weekStartDay: number;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class DateTimeField extends Field {        
+        constructor(config?: Partial<DateTimeFieldConfig>);
     }
 
     type DisplayFieldConfig = {        
@@ -1818,9 +2097,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -1831,6 +2113,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -1841,7 +2125,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -1895,9 +2179,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -1908,6 +2195,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         magnitude: number;
         margin: number|string;
         maskDefaults: object|Mask;
@@ -1921,7 +2210,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -1960,7 +2249,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         adopt: HTMLElement|string;
         align: object|string;
         alignSelf: string;
-        allowInvalid: boolean;
         anchor: boolean;
         appendTo: HTMLElement|string;
         blurAction: string;
@@ -1982,6 +2270,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -1995,6 +2284,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2056,9 +2347,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -2069,6 +2363,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2079,7 +2375,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -2144,9 +2440,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -2157,6 +2456,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2168,7 +2469,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         multiple: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -2220,6 +2521,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -2231,6 +2533,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2286,15 +2590,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         draggable: boolean|object;
         editable: boolean;
         field: string;
+        filterFunction: Function;
         flex: number|string;
         floating: boolean;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -2305,6 +2613,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2317,7 +2627,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -2344,9 +2654,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
 
     export class FilterField extends TextField {        
         constructor(config?: Partial<FilterFieldConfig>);
-    }
-
-    export class FlagField {
     }
 
     type ListConfig = {        
@@ -2378,6 +2685,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         itemTpl: Function;
         items: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2408,9 +2717,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class List extends Widget {        
-        items: object[];
         store: Store;        
         constructor(config?: Partial<ListConfig>);
+        updateItems(): void;
     }
 
     type MaskConfig = {        
@@ -2464,6 +2773,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -2475,6 +2785,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2547,6 +2859,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2584,83 +2898,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         doAction(): void;
     }
 
-    type MessageDialogConfig = {        
-        adopt: HTMLElement|string;
-        align: object|string;
-        alignSelf: string;
-        anchor: boolean;
-        appendTo: HTMLElement|string;
-        autoClose: boolean;
-        autoShow: boolean;
-        bbar: object[]|object;
-        centered: boolean;
-        closable: boolean;
-        closeAction: string;
-        cls: string|object;
-        constrainTo: HTMLElement|Widget|Rectangle;
-        content: string;
-        contentElementCls: string|object;
-        dataset: object;
-        defaultBindProperty: string;
-        defaults: object;
-        disabled: boolean;
-        draggable: boolean|object;
-        flex: number|string;
-        floating: boolean;
-        focusOnToFront: boolean;
-        footer: object|string;
-        forElement: HTMLElement;
-        header: object|string;
-        height: string|number;
-        hidden: boolean;
-        hideAnimation: boolean|object;
-        html: string;
-        htmlCls: string;
-        id: string;
-        insertBefore: HTMLElement|string;
-        insertFirst: HTMLElement|string;
-        itemCls: string;
-        items: object|object[]|Widget[];
-        layout: string;
-        layoutStyle: object;
-        lazyItems: object|object[]|Widget[];
-        listeners: object;
-        margin: number|string;
-        maskDefaults: object|Mask;
-        masked: boolean|string|object|Mask;
-        maxHeight: string|number;
-        maxWidth: string|number;
-        minHeight: string|number;
-        minWidth: string|number;
-        modal: boolean;
-        monitorResize: boolean;
-        namedItems: object;
-        owner: Widget;
-        positioned: boolean;
-        preventTooltipOnTouch: boolean;
-        readOnly: boolean;
-        ref: string;
-        ripple: boolean|object;
-        scrollAction: string;
-        scrollable: boolean|object|Scroller;
-        showAnimation: boolean|object;
-        showOnClick: boolean;
-        style: string;
-        tbar: object[]|object;
-        textAlign: string;
-        textContent: boolean;
-        title: string;
-        tools: object;
-        tooltip: string|object;
-        trapFocus: boolean;
-        weight: number;
-        width: string|number;
-        x: number;
-        y: number;
-    }
-
+    // Singleton
     export class MessageDialog extends Popup {        
-        constructor(config?: Partial<MessageDialogConfig>);
+        static cancelButton: any;
+        static noButton: any;
+        static yesButton: any;        
         static confirm(options: object): Promise<any>;
     }
 
@@ -2692,9 +2934,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputType: string;
         inputWidth: string|number;
@@ -2708,6 +2953,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         largeStep: number;
         leadingZeroes: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2720,7 +2967,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -2745,9 +2992,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class NumberField extends Field {        
-        step: number;
-        value: number;        
+        step: number;        
         constructor(config?: Partial<NumberFieldConfig>);
+        changeValue(): void;
     }
 
     type PagingToolbarConfig = {        
@@ -2771,6 +3018,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -2782,6 +3030,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2841,6 +3091,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -2852,6 +3103,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2918,9 +3171,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -2931,6 +3187,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -2945,7 +3203,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         owner: Widget;
         picker: object;
         pickerAlignElement: string;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -3008,6 +3266,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -3019,6 +3278,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3084,6 +3345,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3153,6 +3416,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3210,6 +3475,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -3221,6 +3487,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3284,10 +3552,13 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
         inline: boolean;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -3298,6 +3569,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3308,7 +3581,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -3361,9 +3634,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -3374,6 +3650,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3386,7 +3664,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -3442,9 +3720,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -3455,6 +3736,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3471,7 +3754,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         owner: Widget;
         picker: object;
         pickerAlignElement: string;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -3500,8 +3783,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         format: string;
         max: string|Date;
         min: string|Date;
-        step: string|number|object;
-        value: string|Date;        
+        step: string|number|object;        
         constructor(config?: Partial<TimeFieldConfig>);
         focusPicker(): void;
         showPicker(): void;
@@ -3546,6 +3828,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3598,6 +3882,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -3609,6 +3894,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3680,6 +3967,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideDelay: number;
         hideOnDelegateChange: boolean;
+        hideWhenEmpty: boolean;
         hoverDelay: number;
         html: string;
         htmlCls: string;
@@ -3693,6 +3981,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         lazyItems: object|object[]|Widget[];
         listeners: object;
         loadingMsg: string;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3765,6 +4055,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3793,6 +4085,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class Widget extends Base implements Events, Localizable {        
+        static $name: string;
         alignSelf: string;
         anchorSize: number[];
         content: string;
@@ -3821,13 +4114,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         scrollable: Scroller;
         style: string|object|CSSStyleDeclaration;
         tooltip: string|object;
-        visible: boolean;
         width: number|string;
         x: any;
         y: any;        
         constructor(config?: Partial<WidgetConfig>);
         static attachTooltip(element: any, configOrText: any): object;
         static fromElement(element: HTMLElement|Event, type?: string|Function, limit?: HTMLElement|number): Widget;
+        static initClass(): void;
+        static optionalL(text: string, templateData?: object): string;
         static query(selector: string|Function, deep?: boolean): Widget;
         static queryAll(selector: string|Function, deep?: boolean): Widget[];
         L(text: string, templateData?: object): string;
@@ -3856,10 +4150,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         showByPoint(x: number|number[], y?: number, options?: object): Promise<any>;
         suspendEvents(queue?: boolean): void;
         toFront(): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
         unmask(): void;
         up(selector: string|Function, deep?: boolean, limit?: number|string|Widget): void;
+        updateLocalization(): void;
     }
 
     type HistogramConfig = {        
@@ -3892,6 +4187,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -3954,6 +4251,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -4021,14 +4320,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         cls: string;
         draggable: boolean;
         editTargetSelector: string;
-        editor: string|object|boolean;
+        editor: boolean;
         enableCellContextMenu: boolean;
         enableHeaderContextMenu: boolean;
         exportable: boolean;
         exportedType: string;
         field: string;
         filterType: string;
-        filterable: boolean|Function|object;
+        filterable: boolean;
         finalizeCellEdit: Function;
         flex: number;
         groupRenderer: Function;
@@ -4042,8 +4341,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4051,7 +4354,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         revertOnEscape: boolean;
         searchable: boolean;
         showColumnPicker: boolean;
-        sortable: boolean|Function|object;
+        sortable: boolean;
         sum: string;
         summaries: object[];
         summaryRenderer: Function;
@@ -4098,8 +4401,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4154,8 +4461,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4211,8 +4522,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4246,6 +4561,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textWrapper: HTMLElement;
         width: number|string;        
         constructor(config?: Partial<ColumnConfig>);
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
         addListener(config: object, thisObj?: object, prio?: number): Function;
         getRawValue(record: Model): any;
@@ -4261,8 +4577,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         show(): void;
         suspendEvents(queue?: boolean): void;
         toggle(force: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
+        updateLocalization(): void;
     }
 
     type DateColumnConfig = {        
@@ -4296,8 +4613,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4355,10 +4676,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         invalidAction: string;
         largeStep: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         max: number;
         min: number;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4414,9 +4739,13 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         lowThreshold: number;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4424,6 +4753,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         revertOnEscape: boolean;
         searchable: boolean;
         showColumnPicker: boolean;
+        showValue: boolean;
         sortable: boolean|Function|object;
         sum: string;
         summaries: object[];
@@ -4475,10 +4805,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         invalidAction: string;
         largeStep: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         max: number;
         min: number;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4520,7 +4854,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         exportedType: string;
         field: string;
         filterType: string;
-        filterable: boolean|Function|object;
+        filterable: boolean;
         finalizeCellEdit: Function;
         flex: number;
         groupRenderer: Function;
@@ -4534,8 +4868,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4543,7 +4881,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         revertOnEscape: boolean;
         searchable: boolean;
         showColumnPicker: boolean;
-        sortable: boolean|Function|object;
+        sortable: boolean;
         sum: string;
         summaries: object[];
         summaryRenderer: Function;
@@ -4590,8 +4928,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4647,8 +4989,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4709,8 +5055,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         invalidAction: string;
         leafIconCls: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4764,8 +5114,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -4788,6 +5142,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
 
     export class WidgetColumn extends Column {        
         constructor(config?: Partial<WidgetColumnConfig>);
+        onAfterWidgetSetValue(widget: Widget, event: object): void;
+        onBeforeWidgetSetValue(widget: Widget, event: object): void;
     }
 
     export class GridTag {
@@ -4831,13 +5187,25 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         indexOf(recordOrId: any): number;
     }
 
+    type GridRowModelConfig = {        
+        cls: string;
+        expanded: boolean;
+        href: string;
+        iconCls: string;
+        parentId: string|number;
+        parentIndex: number;
+        rowHeight: number;
+        target: string;
+    }
+
     export class GridRowModel extends Model {        
         cls: string;
         expanded: boolean;
         href: string;
         iconCls: string;
         rowHeight: number;
-        target: string;
+        target: string;        
+        constructor(config?: Partial<GridRowModelConfig>);
     }
 
     type CellEditConfig = {        
@@ -4847,6 +5215,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         blurAction: string;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         triggerEvent: string;
     }
 
@@ -4862,10 +5232,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type CellMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -4879,6 +5250,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type CellTooltipConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         tooltipRenderer: Function;
     }
 
@@ -4891,6 +5264,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         delay: number;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnAutoWidth extends InstancePlugin implements Delayable {        
@@ -4900,6 +5275,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ColumnDragToolbarConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnDragToolbar extends InstancePlugin {        
@@ -4911,6 +5288,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         groupByRegion: boolean;
         groupByTag: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnPicker extends InstancePlugin {        
@@ -4920,6 +5299,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ColumnReorderConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnReorder extends InstancePlugin {        
@@ -4930,6 +5311,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         listeners: object;
         liveResize: string|boolean;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnResize extends InstancePlugin {        
@@ -4941,6 +5324,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         headerItems: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         processCellItems: Function;
         processHeaderItems: Function;
         triggerEvent: string;
@@ -4953,6 +5338,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type FilterConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class Filter extends InstancePlugin {        
@@ -4965,6 +5352,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         keyStrokeFilterDelay: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class FilterBar extends InstancePlugin {        
@@ -4988,6 +5377,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         field: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         renderer: Function;
     }
 
@@ -5001,6 +5392,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type GridGroupSummaryConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class GridGroupSummary extends InstancePlugin {        
@@ -5008,10 +5401,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type HeaderMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -5025,6 +5419,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type QuickFindConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class QuickFind extends InstancePlugin {        
@@ -5043,6 +5439,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type RegionResizeConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class RegionResize extends InstancePlugin {        
@@ -5053,6 +5451,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         hoverExpandTimeout: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class RowReorder extends InstancePlugin {        
@@ -5062,6 +5462,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type SearchConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class Search extends InstancePlugin {        
@@ -5080,6 +5482,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type SortConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         multiSort: boolean;
     }
 
@@ -5091,6 +5495,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         contentSelector: string;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class StickyCells extends InstancePlugin {        
@@ -5100,6 +5506,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type StripeConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class Stripe extends InstancePlugin {        
@@ -5109,6 +5517,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type GridSummaryConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class GridSummary extends InstancePlugin {        
@@ -5119,6 +5529,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         expandOnCellClick: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class Tree extends InstancePlugin {        
@@ -5133,10 +5545,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type ContextMenuBaseConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -5155,6 +5568,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         exporterConfig: object;
         filename: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         zipcelx: any;
     }
 
@@ -5180,6 +5595,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         keepPathName: boolean;
         keepRegionSizes: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         openAfterExport: boolean;
         openInNewTab: boolean;
         orientation: string;
@@ -5193,12 +5610,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         currentExportPromise: Promise<any>;        
         constructor(config?: Partial<GridPdfExportConfig>);
         export(config: object): Promise<any>;
-        showExportDialog(): void;
+        showExportDialog(): Promise<any>;
     }
 
     type ExporterConfig = {        
         keepPathName: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         translateURLsToAbsolute: boolean|string;
     }
 
@@ -5206,6 +5625,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         localeManager: LocaleManager;
         stylesheets: string[];        
         constructor(config?: Partial<ExporterConfig>);
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
         addListener(config: object, thisObj?: object, prio?: number): Function;
         hasListener(eventName: string): boolean;
@@ -5216,8 +5636,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         removeListener(config: object, thisObj: object): void;
         resumeEvents(): void;
         suspendEvents(queue?: boolean): void;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
+        updateLocalization(): void;
     }
 
     export class Row extends Base {        
@@ -5274,6 +5695,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
         autoHeight: boolean;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -5299,12 +5721,15 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         fullRowRefresh: boolean;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -5319,6 +5744,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         margin: number|string;
         maskDefaults: object|Mask;
@@ -5351,11 +5778,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         style: string;
         subGridConfigs: object;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         weight: number;
         width: string|number;
         x: number;
@@ -5374,6 +5804,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
         autoHeight: boolean;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -5399,12 +5830,15 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         fullRowRefresh: boolean;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -5419,6 +5853,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         margin: number|string;
         maskDefaults: object|Mask;
@@ -5451,24 +5887,28 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         style: string;
         subGridConfigs: object;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         weight: number;
         width: string|number;
         x: number;
         y: number;
     }
 
-    export class GridBase extends Container implements Events, Pluggable, State, GridElementEvents, GridFeatures, GridResponsive, GridSelection, GridState, GridSubGrids {        
+    export class GridBase extends Panel implements Events, Pluggable, State, GridElementEvents, GridFeatures, GridResponsive, GridSelection, GridState, GridSubGrids {        
         bodyHeight: number;
         columnLines: boolean;
         columns: ColumnStore;
         data: object[];
         features: any;
         headerHeight: number;
+        html: string;
         plugins: object;
         responsiveLevel: string;
         selectedCell: object;
@@ -5477,6 +5917,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         selectedRecords: Model[]|number[];
         state: object;
         store: Store|object;
+        subGrids: any;
         transitionDuration: number;        
         constructor(config?: Partial<GridBaseConfig>);
         addListener(config: object, thisObj?: object, prio?: number): Function;
@@ -5486,6 +5927,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         deselectAll(): void;
         deselectCell(cellSelector: object): object;
         deselectRow(recordOrId: Model|string|number): void;
+        deselectRows(recordOrIds: Model|string|number|Model[]|string[]|number[]): void;
         disableScrollingCloseToEdges(subGrid: SubGrid|string): void;
         enableScrollingCloseToEdges(subGrid: SubGrid|string): void;
         expand(idOrRecord: string|number|Model): Promise<any>;
@@ -5528,7 +5970,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         storeScroll(): object;
         suspendEvents(queue?: boolean): void;
         toggleCollapse(idOrRecord: string|number|Model, collapse?: boolean, skipRefresh?: boolean): Promise<any>;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
         unmaskBody(): void;
     }
@@ -5561,6 +6003,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -5609,6 +6053,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
         autoHeight: boolean;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -5634,12 +6079,15 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         fullRowRefresh: boolean;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -5654,6 +6102,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         margin: number|string;
         maskDefaults: object|Mask;
@@ -5686,11 +6136,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         style: string;
         subGridConfigs: object;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         weight: number;
         width: string|number;
         x: number;
@@ -5736,6 +6189,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -5747,6 +6201,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -5839,6 +6295,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         deselectAll(): void;
         deselectCell(cellSelector: object): object;
         deselectRow(recordOrId: Model|string|number): void;
+        deselectRows(recordOrIds: Model|string|number|Model[]|string[]|number[]): void;
         isSelectable(recordCellOrId: any): boolean;
         isSelected(cellSelectorOrId: object|string|number|Model): boolean;
         selectAll(): void;
@@ -5852,6 +6309,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class GridSubGrids {        
+        subGrids: any;        
         getSubGrid(region: string): SubGrid;
         getSubGridFromColumn(column: string|Column): SubGrid;
     }
@@ -5864,7 +6322,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         cellCls: string;
         cellMenuItems: object;
         cls: string;
-        defaultImageName: string;
         draggable: boolean;
         editTargetSelector: string;
         editor: string|object|boolean;
@@ -5885,12 +6342,15 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideable: boolean;
         htmlEncode: boolean;
         icon: string;
-        imagePath: string;
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -5948,8 +6408,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -5974,6 +6438,65 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         refreshHeader(): void;
     }
 
+    type VerticalTimeAxisColumnConfig = {        
+        align: string;
+        autoSyncHtml: boolean;
+        autoWidth: boolean|number|number[];
+        cellCls: string;
+        cellMenuItems: object;
+        cls: string;
+        draggable: boolean;
+        editTargetSelector: string;
+        editor: string;
+        enableCellContextMenu: boolean;
+        enableHeaderContextMenu: boolean;
+        exportable: boolean;
+        exportedType: string;
+        field: string;
+        filterType: string;
+        filterable: boolean;
+        finalizeCellEdit: Function;
+        flex: number;
+        groupRenderer: Function;
+        groupable: boolean;
+        headerMenuItems: object;
+        headerRenderer: Function;
+        hidden: boolean;
+        hideable: boolean;
+        htmlEncode: boolean;
+        icon: string;
+        instantUpdate: boolean;
+        invalidAction: string;
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        locked: boolean;
+        minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
+        region: string;
+        renderer: Function;
+        resizable: boolean;
+        responsiveLevels: object;
+        revertOnEscape: boolean;
+        searchable: boolean;
+        showColumnPicker: boolean;
+        sortable: boolean;
+        sum: string;
+        summaries: object[];
+        summaryRenderer: Function;
+        tags: string[];
+        text: string;
+        tooltipRenderer: Function;
+        touchConfig: object;
+        tree: boolean;
+        width: number|string;
+    }
+
+    export class VerticalTimeAxisColumn extends Column {        
+        constructor(config?: Partial<VerticalTimeAxisColumnConfig>);
+    }
+
     type AbstractCrudManagerConfig = {        
         autoLoad: boolean;
         autoSync: boolean;
@@ -5990,7 +6513,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export abstract class AbstractCrudManager extends Base implements Events, AbstractCrudManagerMixin {        
+    export abstract class AbstractCrudManager extends Base implements AbstractCrudManagerMixin {        
         crudRevision: number;
         crudStores: object[];
         isCrudManagerLoading: boolean;
@@ -6014,6 +6537,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getStoreDescriptor(storeId: string|Store): object;
         hasListener(eventName: string): boolean;
         load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
         on(config: any, thisObj?: any): void;
         reject(): void;
         rejectCrudStores(): void;
@@ -6026,7 +6550,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         abstract sendRequest(request: object): Promise<any>;
         suspendEvents(queue?: boolean): void;
         sync(): Promise<any>;
-        trigger(eventName: string, param: object): boolean;
+        trigger(eventName: string, param?: object): boolean;
         un(config: any, thisObj: any): void;
     }
 
@@ -6035,6 +6559,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoSync: boolean;
         autoSyncTimeout: number;
         crudStores: Store[]|string[]|object[];
+        listeners: object;
         phantomIdField: string;
         phantomParentIdField: string;
         resetIdsBeforeSync: boolean;
@@ -6044,13 +6569,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export abstract class AbstractCrudManagerMixin {        
+    export abstract class AbstractCrudManagerMixin implements Delayable, Events {        
         crudRevision: number;
         crudStores: object[];
         isCrudManagerLoading: boolean;
         syncApplySequence: object[];        
         constructor(config?: Partial<AbstractCrudManagerMixinConfig>);
         addCrudStore(store: Store|string|object|Store[]|string[]|object[], position?: number, fromStore?: string|Store|object): void;
+        addListener(config: object, thisObj?: object, prio?: number): Function;
         addStoreToApplySequence(store: Store|object|Store[]|object[], position?: number, fromStore?: string|Store|object): void;
         abstract cancelRequest(promise: Promise<any>, reject: Function): void;
         commitCrudStores(): void;
@@ -6060,12 +6586,22 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         abstract encode(request: object): string;
         getCrudStore(storeId: string): Store;
         getStoreDescriptor(storeId: string|Store): object;
+        hasListener(eventName: string): boolean;
         load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
+        on(config: any, thisObj?: any): void;
         rejectCrudStores(): void;
+        relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        removeAllListeners(): void;
         removeCrudStore(store: object|string|Store): void;
+        removeListener(config: object, thisObj: object): void;
         removeStoreFromApplySequence(store: object|string|Store): void;
+        resumeEvents(): void;
         abstract sendRequest(request: object): Promise<any>;
+        suspendEvents(queue?: boolean): void;
         sync(): Promise<any>;
+        trigger(eventName: string, param?: object): boolean;
+        un(config: any, thisObj: any): void;
     }
 
     export class JsonEncoder {        
@@ -6128,6 +6664,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -6141,8 +6678,29 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class SchedulerAssignmentStore extends AjaxStore {        
+    export class SchedulerAssignmentStore extends AjaxStore implements AssignmentStoreMixin, SchedulerPartOfProject {        
+        assignmentStore: SchedulerAssignmentStore;
+        data: object[];
+        dependencyStore: SchedulerDependencyStore;
+        eventStore: SchedulerEventStore;
+        project: SchedulerProjectModel;
+        resourceStore: SchedulerResourceStore;        
         constructor(config?: Partial<SchedulerAssignmentStoreConfig>);
+        add(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
+        addAsync(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
+        assignEventToResource(event: TimeSpan, resources: SchedulerResourceModel|SchedulerResourceModel[], removeExistingAssignments?: boolean): SchedulerAssignmentModel[];
+        getAssignmentForEventAndResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel;
+        getAssignmentsForEvent(event: TimeSpan): SchedulerAssignmentModel[];
+        getAssignmentsForResource(resource: SchedulerResourceModel): SchedulerAssignmentModel[];
+        getEventsForResource(resource: SchedulerResourceModel|string|number): TimeSpan[];
+        getResourcesForEvent(event: SchedulerEventModel): SchedulerResourceModel[];
+        isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
+        loadDataAsync(data: object[]): void;
+        mapAssignmentsForEvent(event: SchedulerEventModel, fn?: Function, filterFn?: Function): SchedulerEventModel[]|any[];
+        mapAssignmentsForResource(resource: SchedulerResourceModel|number|string, fn?: Function, filterFn?: Function): SchedulerResourceModel[]|any[];
+        removeAssignmentsForEvent(event: TimeSpan): void;
+        removeAssignmentsForResource(resource: SchedulerResourceModel|any): void;
+        unassignEventFromResource(event: TimeSpan|string|number, resources?: SchedulerResourceModel|string|number): SchedulerAssignmentModel|SchedulerAssignmentModel[];
     }
 
     type CrudManagerConfig = {        
@@ -6167,17 +6725,44 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class CrudManager extends AbstractCrudManager implements JsonEncoder, AjaxTransport {        
+    export class CrudManager extends AbstractCrudManager implements SchedulerProjectCrudManager, JsonEncoder, AjaxTransport {        
         assignmentStore: SchedulerAssignmentStore;
+        crudRevision: number;
+        crudStores: object[];
         dependencyStore: SchedulerDependencyStore;
         eventStore: SchedulerEventStore;
+        isCrudManagerLoading: boolean;
         resourceStore: SchedulerResourceStore;
+        syncApplySequence: object[];
         timeRangesStore: Store;        
         constructor(config?: Partial<CrudManagerConfig>);
+        addCrudStore(store: Store|string|object|Store[]|string[]|object[], position?: number, fromStore?: string|Store|object): void;
+        addListener(config: object, thisObj?: object, prio?: number): Function;
+        addStoreToApplySequence(store: Store|object|Store[]|object[], position?: number, fromStore?: string|Store|object): void;
         cancelRequest(requestPromise: Promise<any>, reject: Function): void;
+        commitCrudStores(): void;
+        crudStoreHasChanges(storeId?: string|Store): boolean;
         decode(responseText: string): object;
+        doDestroy(): void;
         encode(request: object): string;
+        getCrudStore(storeId: string): Store;
+        getStoreDescriptor(storeId: string|Store): object;
+        hasListener(eventName: string): boolean;
+        load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
+        on(config: any, thisObj?: any): void;
+        rejectCrudStores(): void;
+        relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        removeAllListeners(): void;
+        removeCrudStore(store: object|string|Store): void;
+        removeListener(config: object, thisObj: object): void;
+        removeStoreFromApplySequence(store: object|string|Store): void;
+        resumeEvents(): void;
         sendRequest(request: object): Promise<any>;
+        suspendEvents(queue?: boolean): void;
+        sync(): Promise<any>;
+        trigger(eventName: string, param?: object): boolean;
+        un(config: any, thisObj: any): void;
     }
 
     type SchedulerDependencyStoreConfig = {        
@@ -6215,6 +6800,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -6228,8 +6814,25 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class SchedulerDependencyStore extends AjaxStore {        
+    export class SchedulerDependencyStore extends AjaxStore implements SchedulerPartOfProject, DependencyStoreMixin {        
+        assignmentStore: SchedulerAssignmentStore;
+        data: object[];
+        dependencyStore: SchedulerDependencyStore;
+        eventStore: SchedulerEventStore;
+        project: SchedulerProjectModel;
+        resourceStore: SchedulerResourceStore;        
         constructor(config?: Partial<SchedulerDependencyStoreConfig>);
+        add(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
+        addAsync(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
+        getDependencyForSourceAndTargetEvents(sourceEvent: SchedulerEventModel|string, targetEvent: SchedulerEventModel|string): SchedulerDependencyModel;
+        getEventDependencies(event: SchedulerEventModel): SchedulerDependencyModel[];
+        getEventPredecessors(event: SchedulerEventModel): SchedulerDependencyModel[];
+        getEventSuccessors(event: SchedulerEventModel): SchedulerDependencyModel[];
+        getEventsLinkingDependency(sourceEvent: SchedulerEventModel|string, targetEvent: SchedulerEventModel|string): SchedulerDependencyModel;
+        getHighlightedDependencies(cls: string): DependencyBaseModel[];
+        isValidDependency(dependencyOrFromId: SchedulerDependencyModel|number|string, toId?: number|string, type?: number): boolean;
+        isValidDependencyToCreate(fromId: number|string, toId: number|string, type: number): boolean;
+        loadDataAsync(data: object[]): void;
     }
 
     type SchedulerEventStoreConfig = {        
@@ -6265,9 +6868,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         readUrl: string;
         reapplyFilterOnAdd: boolean;
         reapplyFilterOnUpdate: boolean;
+        removeUnassignedEvent: boolean;
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -6281,21 +6886,34 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class SchedulerEventStore extends AjaxStore implements EventStoreMixin {        
+    export class SchedulerEventStore extends AjaxStore implements SchedulerPartOfProject, SharedEventStoreMixin, EventStoreMixin, RecurringEventsMixin {        
+        assignmentStore: SchedulerAssignmentStore;
+        data: object[];
+        dependencyStore: SchedulerDependencyStore;
+        eventStore: SchedulerEventStore;
+        modelClass: { new(data: object): Model };
+        project: SchedulerProjectModel;
+        resourceStore: SchedulerResourceStore;        
         constructor(config?: Partial<SchedulerEventStoreConfig>);
+        add(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
+        addAsync(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
+        append(record: SchedulerEventModel): void;
         assignEventToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number|SchedulerResourceModel[]|string[]|number[], removeExistingAssignments?: boolean): SchedulerAssignmentModel[];
         forEachScheduledEvent(fn: Function, thisObj: object): void;
         getAssignmentsForEvent(event: SchedulerEventModel|string|number): SchedulerAssignmentModel[];
         getAssignmentsForResource(resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel[];
-        getEvents(): SchedulerEventModel[];
+        getEvents(): SchedulerEventModel[]|Map<any,any>;
         getEventsByStartDate(startDate: Date): SchedulerEventModel[];
         getEventsForResource(resource: SchedulerResourceModel|string|number): SchedulerEventModel[];
         getEventsInTimeSpan(startDate: Date, endDate: Date, allowPartial?: boolean, onlyAssigned?: boolean): SchedulerEventModel[];
+        getRecurringEvents(): SchedulerEventModel[];
+        getRecurringTimeSpans(): TimeSpan[];
         getResourcesForEvent(event: SchedulerEventModel|string|number): SchedulerResourceModel[];
         getTotalTimeSpan(): object;
-        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel, resource: SchedulerResourceModel): boolean;
+        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel|null, resource: SchedulerResourceModel): boolean;
         isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
         isEventPersistable(event: SchedulerEventModel): boolean;
+        loadDataAsync(data: object[]): void;
         reassignEventFromResourceToResource(event: SchedulerEventModel, oldResource: SchedulerResourceModel|SchedulerResourceModel[], newResource: SchedulerResourceModel|SchedulerResourceModel[]): void;
         removeAssignmentsForEvent(event: SchedulerEventModel|string|number): void;
         removeAssignmentsForResource(resource: SchedulerResourceModel|string|number): void;
@@ -6337,6 +6955,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -6350,8 +6969,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class SchedulerResourceStore extends AjaxStore implements ResourceStoreMixin {        
+    export class SchedulerResourceStore extends AjaxStore implements SchedulerPartOfProject, ResourceStoreMixin {        
+        assignmentStore: SchedulerAssignmentStore;
+        data: object[];
+        dependencyStore: SchedulerDependencyStore;
+        eventStore: SchedulerEventStore;
+        project: SchedulerProjectModel;
+        resourceStore: SchedulerResourceStore;        
         constructor(config?: Partial<SchedulerResourceStoreConfig>);
+        add(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        addAsync(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        loadDataAsync(data: object[]): void;
     }
 
     type ResourceTimeRangeStoreConfig = {        
@@ -6390,6 +7018,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -6457,6 +7086,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class AssignmentStoreMixin {        
+        data: object[];        
+        add(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
+        addAsync(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
         assignEventToResource(event: TimeSpan, resources: SchedulerResourceModel|SchedulerResourceModel[], removeExistingAssignments?: boolean): SchedulerAssignmentModel[];
         getAssignmentForEventAndResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel;
         getAssignmentsForEvent(event: TimeSpan): SchedulerAssignmentModel[];
@@ -6464,6 +7096,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getEventsForResource(resource: SchedulerResourceModel|string|number): TimeSpan[];
         getResourcesForEvent(event: SchedulerEventModel): SchedulerResourceModel[];
         isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
+        loadDataAsync(data: object[]): void;
         mapAssignmentsForEvent(event: SchedulerEventModel, fn?: Function, filterFn?: Function): SchedulerEventModel[]|any[];
         mapAssignmentsForResource(resource: SchedulerResourceModel|number|string, fn?: Function, filterFn?: Function): SchedulerResourceModel[]|any[];
         removeAssignmentsForEvent(event: TimeSpan): void;
@@ -6481,6 +7114,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class DependencyStoreMixin {        
+        data: object[];        
+        add(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
+        addAsync(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
         getDependencyForSourceAndTargetEvents(sourceEvent: SchedulerEventModel|string, targetEvent: SchedulerEventModel|string): SchedulerDependencyModel;
         getEventDependencies(event: SchedulerEventModel): SchedulerDependencyModel[];
         getEventPredecessors(event: SchedulerEventModel): SchedulerDependencyModel[];
@@ -6489,6 +7125,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getHighlightedDependencies(cls: string): DependencyBaseModel[];
         isValidDependency(dependencyOrFromId: SchedulerDependencyModel|number|string, toId?: number|string, type?: number): boolean;
         isValidDependencyToCreate(fromId: number|string, toId: number|string, type: number): boolean;
+        loadDataAsync(data: object[]): void;
     }
 
     export class EventStoreMixin {        
@@ -6496,13 +7133,13 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         forEachScheduledEvent(fn: Function, thisObj: object): void;
         getAssignmentsForEvent(event: SchedulerEventModel|string|number): SchedulerAssignmentModel[];
         getAssignmentsForResource(resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel[];
-        getEvents(): SchedulerEventModel[];
+        getEvents(): SchedulerEventModel[]|Map<any,any>;
         getEventsByStartDate(startDate: Date): SchedulerEventModel[];
         getEventsForResource(resource: SchedulerResourceModel|string|number): SchedulerEventModel[];
         getEventsInTimeSpan(startDate: Date, endDate: Date, allowPartial?: boolean, onlyAssigned?: boolean): SchedulerEventModel[];
         getResourcesForEvent(event: SchedulerEventModel|string|number): SchedulerResourceModel[];
         getTotalTimeSpan(): object;
-        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel, resource: SchedulerResourceModel): boolean;
+        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel|null, resource: SchedulerResourceModel): boolean;
         isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
         isEventPersistable(event: SchedulerEventModel): boolean;
         reassignEventFromResourceToResource(event: SchedulerEventModel, oldResource: SchedulerResourceModel|SchedulerResourceModel[], newResource: SchedulerResourceModel|SchedulerResourceModel[]): void;
@@ -6515,12 +7152,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         assignmentStore: SchedulerAssignmentStore;
         dependencyStore: SchedulerDependencyStore;
         eventStore: SchedulerEventStore;
-        resourceStore: SchedulerResourceStore;        
-        getAssignmentStore(): SchedulerAssignmentStore;
-        getDependencyStore(): SchedulerDependencyStore;
-        getEventStore(): SchedulerEventStore;
-        getProject(): SchedulerProjectModel;
-        getResourceStore(): SchedulerResourceStore;
+        project: SchedulerProjectModel;
+        resourceStore: SchedulerResourceStore;
     }
 
     type ProjectConsumerConfig = {        
@@ -6529,9 +7162,62 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class ProjectConsumer {        
+        isEngineReady: boolean;        
         constructor(config?: Partial<ProjectConsumerConfig>);
         updateProject(project: SchedulerProjectModel): void;
         whenProjectReady(callback: Function): void;
+    }
+
+    type SchedulerProjectCrudManagerConfig = {        
+        autoLoad: boolean;
+        autoSync: boolean;
+        autoSyncTimeout: number;
+        crudStores: Store[]|string[]|object[];
+        listeners: object;
+        phantomIdField: string;
+        phantomParentIdField: string;
+        project: SchedulerProjectModel;
+        resetIdsBeforeSync: boolean;
+        storeIdProperty: string;
+        syncApplySequence: string[];
+        trackResponseType: boolean;
+        transport: object;
+        writeAllFields: boolean;
+    }
+
+    export class SchedulerProjectCrudManager implements AbstractCrudManagerMixin, AjaxTransport, JsonEncoder {        
+        crudRevision: number;
+        crudStores: object[];
+        isCrudManagerLoading: boolean;
+        syncApplySequence: object[];        
+        constructor(config?: Partial<SchedulerProjectCrudManagerConfig>);
+        addCrudStore(store: Store|string|object|Store[]|string[]|object[], position?: number, fromStore?: string|Store|object): void;
+        addListener(config: object, thisObj?: object, prio?: number): Function;
+        addStoreToApplySequence(store: Store|object|Store[]|object[], position?: number, fromStore?: string|Store|object): void;
+        cancelRequest(requestPromise: Promise<any>, reject: Function): void;
+        commitCrudStores(): void;
+        crudStoreHasChanges(storeId?: string|Store): boolean;
+        decode(responseText: string): object;
+        doDestroy(): void;
+        encode(request: object): string;
+        getCrudStore(storeId: string): Store;
+        getStoreDescriptor(storeId: string|Store): object;
+        hasListener(eventName: string): boolean;
+        load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
+        on(config: any, thisObj?: any): void;
+        rejectCrudStores(): void;
+        relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        removeAllListeners(): void;
+        removeCrudStore(store: object|string|Store): void;
+        removeListener(config: object, thisObj: object): void;
+        removeStoreFromApplySequence(store: object|string|Store): void;
+        resumeEvents(): void;
+        sendRequest(request: object): Promise<any>;
+        suspendEvents(queue?: boolean): void;
+        sync(): Promise<any>;
+        trigger(eventName: string, param?: object): boolean;
+        un(config: any, thisObj: any): void;
     }
 
     export class RecurringEventsMixin extends RecurringTimeSpansMixin {        
@@ -6542,7 +7228,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getRecurringTimeSpans(): TimeSpan[];
     }
 
-    export class ResourceStoreMixin {
+    export class ResourceStoreMixin {        
+        data: object[];        
+        add(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        addAsync(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        loadDataAsync(data: object[]): void;
     }
 
     type SharedEventStoreMixinConfig = {        
@@ -6550,21 +7240,35 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class SharedEventStoreMixin {        
+        data: object[];
         modelClass: { new(data: object): Model };        
         constructor(config?: Partial<SharedEventStoreMixinConfig>);
+        add(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
+        addAsync(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
         append(record: SchedulerEventModel): void;
+        loadDataAsync(data: object[]): void;
+    }
+
+    type RecurrenceLegendConfig = {        
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class RecurrenceLegend implements Localizable {        
         localeManager: LocaleManager;        
+        constructor(config?: Partial<RecurrenceLegendConfig>);
         static getLegend(recurrence: RecurrenceModel, timeSpanStartDate?: Date): string;
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
+        updateLocalization(): void;
     }
 
     type AbstractTimeRangesConfig = {        
         disabled: boolean;
         enableResizing: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showHeaderElements: boolean;
         showTooltip: boolean;
         store: object|Store;
@@ -6581,6 +7285,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ColumnLinesConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ColumnLines extends InstancePlugin {        
@@ -6592,6 +7298,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         creationTooltip: object;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         pathFinderConfig: object;
         showCreationTooltip: boolean;
         showTooltip: boolean;
@@ -6611,6 +7319,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideTerminals(eventElement: HTMLElement): void;
         refreshDependency(dependency: SchedulerDependencyModel): void;
         releaseDependency(dependency: SchedulerDependencyModel): void;
+        resolveDependencyRecord(element: HTMLElement): SchedulerDependencyModel;
         showTerminals(timeSpanRecord: TimeSpan, element: HTMLElement): void;
     }
 
@@ -6619,6 +7328,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         editorConfig: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         saveAndCloseOnEnter: boolean;
         showDeleteButton: boolean;
         showLagField: boolean;
@@ -6640,10 +7351,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type EventContextMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -6662,6 +7374,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         dragHelperConfig: object;
         dragTipTemplate: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showExactDropPosition: boolean;
         showTooltip: boolean;
         unifiedDrag: boolean;
@@ -6678,6 +7392,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         dragTolerance: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showTooltip: boolean;
         validatorFn: Function;
         validatorFnThisObj: object;
@@ -6690,6 +7406,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type EventDragSelectConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class EventDragSelect extends InstancePlugin implements Delayable {        
@@ -6704,9 +7422,10 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         endDateConfig: object;
         endTimeConfig: object;
         extraItems: string|object[];
-        extraWidgets: string|object[];
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         readOnly: boolean;
         resourceFieldConfig: object;
         saveAndCloseOnEnter: boolean;
@@ -6719,6 +7438,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         timeFormat: string;
         triggerEvent: string;
         typeField: string;
+        weekStartDay: number;
     }
 
     export class EventEdit extends EditBase implements RecurringEventEdit {        
@@ -6742,6 +7462,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type EventFilterConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class EventFilter extends InstancePlugin {        
@@ -6749,10 +7471,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type EventMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -6764,9 +7487,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         showContextMenuFor(eventRecord: SchedulerEventModel, options?: object): void;
     }
 
-    type EventResizeConfig = {        
+    type SchedulerEventResizeConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showExactResizePosition: boolean;
         showTooltip: boolean;
         tip: Tooltip;
@@ -6774,14 +7499,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         validatorFnThisObj: object;
     }
 
-    export class EventResize extends ResizeBase {        
-        constructor(config?: Partial<EventResizeConfig>);
+    export class SchedulerEventResize extends ResizeBase {        
+        constructor(config?: Partial<SchedulerEventResizeConfig>);
     }
 
     type EventTooltipConfig = {        
         autoUpdate: boolean;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         template: Function;
     }
 
@@ -6792,6 +7519,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type GroupSummaryConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         renderer: Function;
         showTooltip: boolean;
         summaries: object[];
@@ -6805,6 +7534,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         extraItems: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         processItems: Function;
     }
 
@@ -6815,6 +7546,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type HeaderZoomConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class HeaderZoom extends InstancePlugin {        
@@ -6828,6 +7561,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelCls: string;
         left: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         right: object;
         top: object;
     }
@@ -6841,6 +7576,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         enableResizing: boolean;
         highlightWeekends: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        maxTimeAxisUnit: boolean;
         showHeaderElements: boolean;
         showTooltip: boolean;
         store: object|Store;
@@ -6853,6 +7591,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type PanConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         vertical: boolean;
     }
 
@@ -6863,6 +7603,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ResourceTimeRangesConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         store: ResourceTimeRangeStore;
     }
@@ -6872,10 +7614,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type ScheduleContextMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -6887,10 +7630,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type ScheduleMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -6904,6 +7648,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ScheduleTooltipConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ScheduleTooltip extends InstancePlugin {        
@@ -6917,6 +7663,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editorConfig: object;
         field: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         triggerEvent: string;
     }
 
@@ -6929,6 +7677,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type SummaryConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         renderer: Function;
         showTooltip: boolean;
         summaries: object[];
@@ -6939,10 +7689,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type TimeAxisHeaderMenuConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -6958,6 +7709,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         enableResizing: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showCurrentTimeLine: boolean;
         showHeaderElements: boolean;
         showTooltip: boolean;
@@ -6979,6 +7732,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         dragHelperConfig: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showExactDropPosition: boolean;
         showTooltip: boolean;
     }
@@ -6992,6 +7747,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         dragTolerance: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showTooltip: boolean;
         validatorFnThisObj: object;
     }
@@ -7012,15 +7769,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         endDateConfig: object;
         endTimeConfig: object;
         extraItems: string|object[];
-        extraWidgets: string|object[];
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         saveAndCloseOnEnter: boolean;
         showDeleteButton: boolean;
         showNameField: boolean;
         startDateConfig: object;
         startTimeConfig: object;
         timeFormat: string;
+        weekStartDay: number;
     }
 
     export class EditBase extends InstancePlugin {        
@@ -7032,6 +7791,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ResizeBaseConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showExactResizePosition: boolean;
         showTooltip: boolean;
         tip: Tooltip;
@@ -7046,6 +7807,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ResourceTimeRangesBaseConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export abstract class ResourceTimeRangesBase extends InstancePlugin {        
@@ -7053,10 +7816,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type TimeSpanMenuBaseConfig = {        
-        defaultItems: object;
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         menuConfig: object;
         processItems: Function;
         triggerEvent: string;
@@ -7072,6 +7836,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         items: object|object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         processItems: Function;
         triggerEvent: string;
     }
@@ -7086,6 +7852,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoUpdate: boolean;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class TooltipBase extends InstancePlugin {        
@@ -7101,6 +7869,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         exporterConfig: object;
         filename: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         zipcelx: any;
     }
 
@@ -7125,6 +7895,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         keepPathName: boolean;
         keepRegionSizes: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         openAfterExport: boolean;
         openInNewTab: boolean;
         orientation: string;
@@ -7166,10 +7938,42 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<RecurringEventEditConfig>);
     }
 
-    export class SchedulerAssignmentModel extends Model {
+    type SchedulerAssignmentModelConfig = {        
+        drawDependencies: boolean;
+        event: string|number;
+        eventId: string|number;
+        parentId: string|number;
+        parentIndex: number;
+        resource: string|number;
+        resourceId: string|number;
     }
 
-    export class Calendar {
+    export class SchedulerAssignmentModel extends Model implements AssignmentModelMixin {        
+        drawDependencies: boolean;
+        event: string|number;
+        eventId: string|number;
+        eventName: string;
+        isPersistable: boolean;
+        resource: string|number;
+        resourceId: string|number;
+        resourceName: string;        
+        constructor(config?: Partial<SchedulerAssignmentModelConfig>);
+        getResource(): SchedulerResourceModel;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
+    }
+
+    type DependencyBaseModelConfig = {        
+        bidirectional: boolean;
+        cls: string;
+        from: string|number;
+        fromSide: string;
+        lag: number;
+        lagUnit: string;
+        parentId: string|number;
+        parentIndex: number;
+        to: string|number;
+        toSide: string;
+        type: number;
     }
 
     export class DependencyBaseModel extends Model {        
@@ -7188,17 +7992,57 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         to: string|number;
         toSide: string;
         type: number;        
+        constructor(config?: Partial<DependencyBaseModelConfig>);
         getHardType(): number;
         getSourceEvent(): SchedulerEventModel;
         getTargetEvent(): SchedulerEventModel;
         highlight(cls: string): void;
         isHighlightedWith(cls: string): boolean;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         setHardType(type: number): void;
         setLag(lag: number|string|object, lagUnit?: string): void;
         unhighlight(cls: string): void;
     }
 
-    export class SchedulerDependencyModel extends DependencyBaseModel {
+    type SchedulerDependencyModelConfig = {        
+        bidirectional: boolean;
+        cls: string;
+        from: string|number;
+        fromSide: string;
+        lag: number;
+        lagUnit: string;
+        parentId: string|number;
+        parentIndex: number;
+        to: string|number;
+        toSide: string;
+        type: number;
+    }
+
+    export class SchedulerDependencyModel extends DependencyBaseModel {        
+        constructor(config?: Partial<SchedulerDependencyModelConfig>);
+    }
+
+    type SchedulerEventModelConfig = {        
+        allDay: boolean;
+        cls: DomClassList|string;
+        draggable: boolean;
+        duration: number;
+        durationUnit: string;
+        endDate: string|Date;
+        eventColor: string;
+        eventStyle: string;
+        exceptionDates: object;
+        iconCls: string;
+        id: string|number;
+        milestoneWidth: number;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        recurrenceRule: string;
+        resizable: boolean|string;
+        resourceId: string|number;
+        startDate: string|Date;
+        style: string;
     }
 
     export class SchedulerEventModel extends TimeSpan implements RecurringTimeSpan, EventModelMixin {        
@@ -7226,6 +8070,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resources: SchedulerResourceModel[];
         successors: EventModel[];
         supportsRecurring: any;        
+        constructor(config?: Partial<SchedulerEventModelConfig>);
         assign(resource: SchedulerResourceModel|string|number, removeExistingAssignments?: boolean): void;
         getOccurrencesForDateRange(startDate: Date, endDate?: Date): TimeSpan[];
         getResource(resourceId?: string): SchedulerResourceModel;
@@ -7233,12 +8078,59 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         isAssignedTo(resource: SchedulerResourceModel|string|number): boolean;
         reassign(oldResourceId: SchedulerResourceModel|string|number, newResourceId: SchedulerResourceModel|string|number): void;
         remove(): void;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         setRecurrence(recurrence: object|string|RecurrenceModel, interval?: number, recurrenceEnd?: number|Date): void;
         shift(unit: string, amount: number): Promise<any>;
         unassign(resource?: SchedulerResourceModel|string|number): void;
     }
 
-    export class SchedulerProjectModel extends Model {
+    type SchedulerProjectModelConfig = {        
+        assignmentModelClass: SchedulerAssignmentModel;
+        assignmentStoreClass: SchedulerAssignmentStore|object;
+        assignmentsData: SchedulerAssignmentModel[];
+        dependenciesData: SchedulerDependencyModel[];
+        dependencyModelClass: SchedulerDependencyModel;
+        dependencyStoreClass: SchedulerDependencyStore|object;
+        eventModelClass: SchedulerEventModel;
+        eventStoreClass: SchedulerEventStore|object;
+        eventsData: SchedulerEventModel[];
+        parentId: string|number;
+        parentIndex: number;
+        resourceModelClass: SchedulerResourceModel;
+        resourceStoreClass: SchedulerResourceStore|object;
+        resourceTimeRangesData: ResourceTimeRangeModel[];
+        resourcesData: SchedulerResourceModel[];
+        silenceInitialCommit: boolean;
+        stm: object|StateTrackingManager;
+        timeRangesData: TimeSpan[];
+    }
+
+    export class SchedulerProjectModel extends Model implements ProjectModelMixin {        
+        assignmentStore: SchedulerAssignmentStore;
+        dependencyStore: SchedulerDependencyStore;
+        eventStore: SchedulerEventStore;
+        json: string;
+        resourceStore: SchedulerResourceStore;
+        resourceTimeRangeStore: ResourceTimeRangeStore;
+        stm: StateTrackingManager;
+        timeRangeStore: Store;        
+        constructor(config?: Partial<SchedulerProjectModelConfig>);
+        commitAsync(): void;
+        loadInlineData(dataPackage: object): void;
+        toJSON(): object;
+    }
+
+    type RecurrenceModelConfig = {        
+        count: number;
+        days: string[];
+        endDate: Date;
+        frequency: string;
+        interval: number;
+        monthDays: number[];
+        months: number[];
+        parentId: string|number;
+        parentIndex: number;
+        positions: number;
     }
 
     export class RecurrenceModel extends Model {        
@@ -7252,15 +8144,75 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         months: number[];
         positions: number;
         rule: any;
-        timeSpan: any;
+        timeSpan: any;        
+        constructor(config?: Partial<RecurrenceModelConfig>);
     }
 
-    export class SchedulerResourceModel extends GridRowModel {
+    type SchedulerResourceModelConfig = {        
+        cls: string;
+        eventColor: string;
+        eventStyle: string;
+        expanded: boolean;
+        href: string;
+        iconCls: string;
+        id: string|number;
+        image: string;
+        imageUrl: string;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        rowHeight: number;
+        target: string;
+    }
+
+    export class SchedulerResourceModel extends GridRowModel implements ResourceModelMixin {        
+        assignments: SchedulerAssignmentModel[];
+        eventColor: string;
+        eventStyle: string;
+        events: SchedulerEventModel[];
+        id: string|number;
+        image: string;
+        imageUrl: string;
+        isPersistable: boolean;
+        name: string;        
+        constructor(config?: Partial<SchedulerResourceModelConfig>);
+        getEvents(): SchedulerEventModel[];
+        setAsync(field: string|object, value: any, silent?: boolean): void;
+        unassignAll(): void;
+    }
+
+    type ResourceTimeRangeModelConfig = {        
+        cls: DomClassList|string;
+        duration: number;
+        durationUnit: string;
+        endDate: string|Date;
+        iconCls: string;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        resourceId: string|number;
+        startDate: string|Date;
+        style: string;
+        timeRangeColor: string;
     }
 
     export class ResourceTimeRangeModel extends TimeSpan {        
         resourceId: string|number;
-        timeRangeColor: string;
+        timeRangeColor: string;        
+        constructor(config?: Partial<ResourceTimeRangeModelConfig>);
+    }
+
+    type TimeSpanConfig = {        
+        cls: DomClassList|string;
+        duration: number;
+        durationUnit: string;
+        endDate: string|Date;
+        iconCls: string;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        startDate: string|Date;
+        style: string;
     }
 
     export class TimeSpan extends Model {        
@@ -7277,6 +8229,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         startDate: string|Date;
         style: string;
         wbsCode: string;        
+        constructor(config?: Partial<TimeSpanConfig>);
+        exportToICS(icsEventConfig?: object): void;
         forEachDate(func: Function, thisObj: object): void;
         setDuration(duration: number, durationUnit: string): void;
         setEndDate(date: Date, keepDuration?: boolean): void;
@@ -7286,15 +8240,37 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         split(splitPoint?: number): TimeSpan;
     }
 
+    type AssignmentModelMixinConfig = {        
+        drawDependencies: boolean;
+        event: string|number;
+        eventId: string|number;
+        resource: string|number;
+        resourceId: string|number;
+    }
+
     export class AssignmentModelMixin {        
         drawDependencies: boolean;
+        event: string|number;
         eventId: string|number;
         eventName: string;
-        eventResourceKey: any;
         isPersistable: boolean;
+        resource: string|number;
         resourceId: string|number;
         resourceName: string;        
+        constructor(config?: Partial<AssignmentModelMixinConfig>);
         getResource(): SchedulerResourceModel;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
+    }
+
+    type EventModelMixinConfig = {        
+        allDay: boolean;
+        draggable: boolean;
+        eventColor: string;
+        eventStyle: string;
+        id: string|number;
+        milestoneWidth: number;
+        resizable: boolean|string;
+        resourceId: string|number;
     }
 
     export class EventModelMixin {        
@@ -7315,36 +8291,52 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceId: string|number;
         resources: SchedulerResourceModel[];
         successors: EventModel[];        
+        constructor(config?: Partial<EventModelMixinConfig>);
         assign(resource: SchedulerResourceModel|string|number, removeExistingAssignments?: boolean): void;
         getResource(resourceId?: string): SchedulerResourceModel;
         isAssignedTo(resource: SchedulerResourceModel|string|number): boolean;
         reassign(oldResourceId: SchedulerResourceModel|string|number, newResourceId: SchedulerResourceModel|string|number): void;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         shift(unit: string, amount: number): Promise<any>;
         unassign(resource?: SchedulerResourceModel|string|number): void;
     }
 
     type ProjectModelMixinConfig = {        
         assignmentModelClass: SchedulerAssignmentModel;
-        assignmentStoreClass: SchedulerAssignmentStore;
+        assignmentStoreClass: SchedulerAssignmentStore|object;
+        assignmentsData: SchedulerAssignmentModel[];
+        dependenciesData: SchedulerDependencyModel[];
         dependencyModelClass: SchedulerDependencyModel;
-        dependencyStoreClass: SchedulerDependencyStore;
+        dependencyStoreClass: SchedulerDependencyStore|object;
         eventModelClass: SchedulerEventModel;
-        eventStoreClass: SchedulerEventStore;
+        eventStoreClass: SchedulerEventStore|object;
+        eventsData: SchedulerEventModel[];
         resourceModelClass: SchedulerResourceModel;
-        resourceStoreClass: SchedulerResourceStore;
+        resourceStoreClass: SchedulerResourceStore|object;
+        resourceTimeRangesData: ResourceTimeRangeModel[];
+        resourcesData: SchedulerResourceModel[];
         stm: object|StateTrackingManager;
+        timeRangesData: TimeSpan[];
     }
 
     export class ProjectModelMixin {        
         assignmentStore: SchedulerAssignmentStore;
-        calendar: Calendar;
         dependencyStore: SchedulerDependencyStore;
         eventStore: SchedulerEventStore;
+        json: string;
         resourceStore: SchedulerResourceStore;
         resourceTimeRangeStore: ResourceTimeRangeStore;
         stm: StateTrackingManager;
         timeRangeStore: Store;        
         constructor(config?: Partial<ProjectModelMixinConfig>);
+        commitAsync(): void;
+        loadInlineData(dataPackage: object): void;
+        toJSON(): object;
+    }
+
+    type RecurringTimeSpanConfig = {        
+        exceptionDates: object;
+        recurrenceRule: string;
     }
 
     export class RecurringTimeSpan {        
@@ -7355,10 +8347,20 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         recurrenceModel: any;
         recurrenceRule: string;
         supportsRecurring: any;        
+        constructor(config?: Partial<RecurringTimeSpanConfig>);
         getOccurrencesForDateRange(startDate: Date, endDate?: Date): TimeSpan[];
         hasException(date: Date): boolean;
         remove(): void;
         setRecurrence(recurrence: object|string|RecurrenceModel, interval?: number, recurrenceEnd?: number|Date): void;
+    }
+
+    type ResourceModelMixinConfig = {        
+        eventColor: string;
+        eventStyle: string;
+        id: string|number;
+        image: string;
+        imageUrl: string;
+        name: string;
     }
 
     export class ResourceModelMixin {        
@@ -7371,40 +8373,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         imageUrl: string;
         isPersistable: boolean;
         name: string;        
+        constructor(config?: Partial<ResourceModelMixinConfig>);
         getEvents(): SchedulerEventModel[];
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         unassignAll(): void;
     }
 
-    type PresetManagerConfig = {        
-        allowNoId: boolean;
-        autoCommit: boolean;
-        autoTree: boolean;
-        chainedFields: string[];
-        chainedFilterFn: Function;
-        data: object[];
-        doRelayToMaster: string[];
-        dontRelayToMaster: string;
-        fields: object[];
-        filters: object;
-        groupers: object[];
-        id: string|number;
-        keepUncommittedChanges: boolean;
-        listeners: object;
-        masterStore: Store;
-        modelClass: { new(data: object): Model };
-        reapplyFilterOnAdd: boolean;
-        reapplyFilterOnUpdate: boolean;
-        sorters: object[]|string[];
-        stm: StateTrackingManager;
-        storage: Collection|object;
-        tree: boolean;
-        useLocaleSort: boolean|string|object;
-        useRawData: boolean|object;
-        zoomOrder: number;
-    }
-
+    // Singleton
     export class PresetManager extends PresetStore {        
-        constructor(config?: Partial<PresetManagerConfig>);
         static deletePreset(id: string): void;
         static normalizePreset(presetOrId: string|object): ViewPreset;
         static registerPreset(id: string, config: object): ViewPreset;
@@ -7442,6 +8418,23 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<PresetStoreConfig>);
     }
 
+    type ViewPresetConfig = {        
+        columnLinesFor: number;
+        defaultSpan: number;
+        displayDateFormat: string;
+        headers: object;
+        mainHeaderLevel: number;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        rowHeight: number;
+        shiftIncrement: number;
+        shiftUnit: string;
+        tickHeight: number;
+        tickWidth: number;
+        timeResolution: object;
+    }
+
     export class ViewPreset extends Model {        
         columnLinesFor: number;
         defaultSpan: number;
@@ -7454,7 +8447,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         shiftUnit: string;
         tickHeight: number;
         tickWidth: number;
-        timeResolution: object;
+        timeResolution: object;        
+        constructor(config?: Partial<ViewPresetConfig>);
     }
 
     type ViewPresetHeaderRowConfig = {        
@@ -7480,6 +8474,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         includeUnassigned: boolean;
         indent: boolean;
         indentationSymbol: string;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showGroupHeader: boolean;
         target: Grid;
     }
@@ -7487,7 +8483,9 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     export class ScheduleTableExporter extends TableExporter implements Localizable {        
         localeManager: LocaleManager;        
         constructor(config?: Partial<ScheduleTableExporterConfig>);
+        static optionalL(text: string, templateData?: object): string;
         L(text: string, templateData?: object): string;
+        updateLocalization(): void;
     }
 
     type ResourceHeaderConfig = {        
@@ -7520,6 +8518,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -7562,11 +8562,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -7585,7 +8586,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -7608,7 +8609,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -7617,14 +8618,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -7640,6 +8644,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -7675,7 +8681,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -7698,15 +8704,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -7732,11 +8742,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -7755,7 +8766,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -7778,7 +8789,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -7787,14 +8798,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -7810,6 +8824,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -7845,7 +8861,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -7868,15 +8884,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -7904,6 +8924,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventStore: SchedulerEventStore;
         events: SchedulerEventModel[]|object[];
         fillTicks: string;
+        isEngineReady: boolean;
         maxZoomLevel: number;
         milestoneAlign: any;
         minZoomLevel: number;
@@ -7920,7 +8941,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         selectedEvents: SchedulerEventModel[];
         snap: boolean;
         tickSize: number;
-        tickWidth: number;
         timeRangeStore: Store;
         timeResolution: object|number;
         useInitialAnimation: boolean|string;
@@ -7939,7 +8959,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getCoordinateFromDate(date: Date|number, options?: boolean|object): number;
         getDateFromCoordinate(coordinate: number, roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getDateFromDomEvent(e: Event, roundingMethod?: string, allowOutOfRange?: boolean): Date;
-        getDateFromX(x: number, roundingMethod: string, local?: boolean): Date;
         getDateFromXY(xy: any[], roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getElementFromAssignmentRecord(assignmentRecord: SchedulerAssignmentModel): HTMLElement;
         getElementFromEventRecord(eventRecord: SchedulerEventModel, resourceRecord: SchedulerResourceModel): HTMLElement;
@@ -7951,12 +8970,13 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getStartEndDatesFromRectangle(rect: Rectangle, roundingMethod: string, duration: number): object;
         getTimeSpanDistance(startDate: Date, endDate: Date): number;
         isAssignmentSelected(assignment: SchedulerAssignmentModel): void;
-        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel, resource: SchedulerResourceModel): boolean;
+        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel|null, resource: SchedulerResourceModel): boolean;
         isEventSelected(event: SchedulerEventModel): void;
         onEventCreated(eventRecord: SchedulerEventModel): void;
         onEventDataGenerated(eventData: object): void;
         repaintEventsForResource(resourceRecord: SchedulerResourceModel): void;
         resolveAssignmentRecord(element: HTMLElement): SchedulerAssignmentModel;
+        resolveDependencyRecord(element: HTMLElement): SchedulerDependencyModel;
         resolveEventRecord(element: HTMLElement): SchedulerEventModel;
         resolveResourceRecord(elementOrEvent: HTMLElement|Event, xy?: number[]): SchedulerResourceModel;
         restartInitialAnimation(initialAnimation: boolean|string): void;
@@ -8002,6 +9022,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -8035,14 +9056,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -8057,6 +9081,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         managedEventSizing: boolean;
         margin: number|string;
@@ -8099,12 +9125,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -8133,7 +9163,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         snap: boolean;
         startDate: Date;
         tickSize: number;
-        tickWidth: number;
+        timeAxis: TimeAxis;
         timeAxisSubGridElement: SubGrid;
         timeAxisViewModel: TimeAxisViewModel;
         timeResolution: object|number;
@@ -8147,7 +9177,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getCoordinateFromDate(date: Date|number, options?: boolean|object): number;
         getDateFromCoordinate(coordinate: number, roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getDateFromDomEvent(e: Event, roundingMethod?: string, allowOutOfRange?: boolean): Date;
-        getDateFromX(x: number, roundingMethod: string, local?: boolean): Date;
         getDateFromXY(xy: any[], roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getForegroundDomConfigs(configs: any[]): void;
         getHeaderDomConfigs(configs: any[]): void;
@@ -8208,6 +9237,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -8219,6 +9249,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8359,16 +9391,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     type SchedulerStoresConfig = {        
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         endParamName: string;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         events: SchedulerEventModel[]|object[];
         passStartEndParameters: boolean;
         removeUnassignedEvent: boolean;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         startParamName: string;
@@ -8398,7 +9430,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getCoordinateFromDate(date: Date|number, options?: boolean|object): number;
         getDateFromCoordinate(coordinate: number, roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getDateFromDomEvent(e: Event, roundingMethod?: string, allowOutOfRange?: boolean): Date;
-        getDateFromX(x: number, roundingMethod: string, local?: boolean): Date;
         getDateFromXY(xy: any[], roundingMethod?: string, local?: boolean, allowOutOfRange?: boolean): Date;
         getStartEndDatesFromRectangle(rect: Rectangle, roundingMethod: string, duration: number): object;
         getTimeSpanDistance(startDate: Date, endDate: Date): number;
@@ -8418,8 +9449,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         static eventColors: string;
         static eventStyles: string;
         barMargin: number;
-        tickSize: number;
-        tickWidth: number;        
+        tickSize: number;        
         constructor(config?: Partial<TimelineEventRenderingConfig>);
     }
 
@@ -8515,6 +9545,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -8526,6 +9557,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8561,11 +9594,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class RecurrenceConfirmationPopup extends Popup {        
-        cancelButton: Button;
-        changeMultipleButton: Button;
-        changeSingleButton: Button;        
+        cancelButton: any;
+        changeMultipleButton: any;
+        changeSingleButton: any;        
         constructor(config?: Partial<RecurrenceConfirmationPopupConfig>);
         confirm(config: object): void;
+        onCancelButtonClick(): void;
+        onChangeMultipleButtonClick(): void;
+        onChangeSingleButtonClick(): void;
+        processMultipleRecords(): void;
+        processSingleRecord(): void;
     }
 
     type RecurrenceEditorConfig = {        
@@ -8598,6 +9636,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -8609,6 +9648,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8679,6 +9720,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         insertBefore: HTMLElement|string;
         insertFirst: HTMLElement|string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8730,7 +9773,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -8746,6 +9789,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -8756,9 +9800,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -8773,6 +9820,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8791,7 +9840,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -8809,7 +9858,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -8846,6 +9895,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -8857,6 +9907,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8902,7 +9954,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -8918,6 +9970,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -8928,9 +9981,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -8945,6 +10001,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -8963,7 +10021,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -8981,7 +10039,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -9008,7 +10066,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -9024,6 +10082,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -9034,9 +10093,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -9051,6 +10113,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -9069,7 +10133,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -9087,7 +10151,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -9114,7 +10178,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -9130,6 +10194,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -9140,9 +10205,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -9157,6 +10225,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -9175,7 +10245,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -9193,7 +10263,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -9220,7 +10290,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -9236,6 +10306,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -9246,9 +10317,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -9263,6 +10337,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -9281,7 +10357,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -9299,7 +10375,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -9343,6 +10419,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         itemTpl: Function;
         items: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -9406,6 +10484,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         itemTpl: Function;
         items: object[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -9472,10 +10552,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         invalidAction: string;
         largeStep: number;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         max: number;
         min: number;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -9531,8 +10615,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -9592,8 +10680,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         instantUpdate: boolean;
         invalidAction: string;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         locked: boolean;
         minWidth: number|string;
+        parentId: string|number;
+        parentIndex: number;
         region: string;
         renderer: Function;
         resizable: boolean;
@@ -9652,6 +10744,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -9665,8 +10758,24 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class AssignmentStore extends AjaxStore implements AssignmentStoreMixin {        
+    export class AssignmentStore extends AjaxStore implements PartOfProject, AssignmentStoreMixin {        
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
+        calendarManagerStore: CalendarManagerStore;
+        data: object[];
+        // @ts-ignore
+        dependencyStore: DependencyStore;
+        // @ts-ignore
+        eventStore: EventStore;
+        project: ProjectModel;
+        // @ts-ignore
+        resourceStore: ResourceStore;
+        // @ts-ignore
+        taskStore: EventStore;        
         constructor(config?: Partial<AssignmentStoreConfig>);
+        add(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
+        addAsync(records: SchedulerAssignmentModel|SchedulerAssignmentModel[]|object|object[], silent?: boolean): SchedulerAssignmentModel[];
         assignEventToResource(event: TimeSpan, resources: SchedulerResourceModel|SchedulerResourceModel[], removeExistingAssignments?: boolean): SchedulerAssignmentModel[];
         getAssignmentForEventAndResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel;
         getAssignmentsForEvent(event: TimeSpan): SchedulerAssignmentModel[];
@@ -9674,6 +10783,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getEventsForResource(resource: SchedulerResourceModel|string|number): TimeSpan[];
         getResourcesForEvent(event: SchedulerEventModel): SchedulerResourceModel[];
         isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
+        loadDataAsync(data: object[]): void;
         mapAssignmentsForEvent(event: SchedulerEventModel, fn?: Function, filterFn?: Function): SchedulerEventModel[]|any[];
         mapAssignmentsForResource(resource: SchedulerResourceModel|number|string, fn?: Function, filterFn?: Function): SchedulerResourceModel[]|any[];
         removeAssignmentsForEvent(event: TimeSpan): void;
@@ -9716,6 +10826,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -9730,22 +10841,20 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     }
 
     export class CalendarManagerStore extends AjaxStore implements PartOfProject {        
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
+        project: ProjectModel;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
+        resourceStore: ResourceStore;
+        // @ts-ignore
         taskStore: EventStore;        
         constructor(config?: Partial<CalendarManagerStoreConfig>);
-        getAssignmentStore(): AssignmentStore;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
-        getResourceStore(): ResourceStore;
     }
 
     type DependencyStoreConfig = {        
@@ -9783,6 +10892,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -9796,8 +10906,24 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class DependencyStore extends AjaxStore implements DependencyStoreMixin {        
+    export class DependencyStore extends AjaxStore implements PartOfProject, DependencyStoreMixin {        
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
+        calendarManagerStore: CalendarManagerStore;
+        data: object[];
+        // @ts-ignore
+        dependencyStore: DependencyStore;
+        // @ts-ignore
+        eventStore: EventStore;
+        project: ProjectModel;
+        // @ts-ignore
+        resourceStore: ResourceStore;
+        // @ts-ignore
+        taskStore: EventStore;        
         constructor(config?: Partial<DependencyStoreConfig>);
+        add(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
+        addAsync(records: SchedulerDependencyModel|SchedulerDependencyModel[]|object|object[], silent?: boolean): SchedulerDependencyModel[];
         getDependencyForSourceAndTargetEvents(sourceEvent: SchedulerEventModel|string, targetEvent: SchedulerEventModel|string): SchedulerDependencyModel;
         getEventDependencies(event: SchedulerEventModel): SchedulerDependencyModel[];
         getEventPredecessors(event: SchedulerEventModel): SchedulerDependencyModel[];
@@ -9806,6 +10932,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getHighlightedDependencies(cls: string): DependencyBaseModel[];
         isValidDependency(dependencyOrFromId: SchedulerDependencyModel|number|string, toId?: number|string, type?: number): boolean;
         isValidDependencyToCreate(fromId: number|string, toId: number|string, type: number): boolean;
+        loadDataAsync(data: object[]): void;
     }
 
     type EventStoreConfig = {        
@@ -9840,9 +10967,11 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         readUrl: string;
         reapplyFilterOnAdd: boolean;
         reapplyFilterOnUpdate: boolean;
+        removeUnassignedEvent: boolean;
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -9856,21 +10985,42 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class EventStore extends AjaxStore implements EventStoreMixin {        
+    export class EventStore extends AjaxStore implements PartOfProject, SharedEventStoreMixin, EventStoreMixin, RecurringEventsMixin {        
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
+        calendarManagerStore: CalendarManagerStore;
+        data: object[];
+        // @ts-ignore
+        dependencyStore: DependencyStore;
+        // @ts-ignore
+        eventStore: EventStore;
+        modelClass: { new(data: object): Model };
+        project: ProjectModel;
+        // @ts-ignore
+        resourceStore: ResourceStore;
+        // @ts-ignore
+        taskStore: EventStore;        
         constructor(config?: Partial<EventStoreConfig>);
+        add(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
+        addAsync(records: SchedulerEventModel|SchedulerEventModel[]|object|object[], silent?: boolean): SchedulerEventModel[];
+        append(record: SchedulerEventModel): void;
         assignEventToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number|SchedulerResourceModel[]|string[]|number[], removeExistingAssignments?: boolean): SchedulerAssignmentModel[];
         forEachScheduledEvent(fn: Function, thisObj: object): void;
         getAssignmentsForEvent(event: SchedulerEventModel|string|number): SchedulerAssignmentModel[];
         getAssignmentsForResource(resource: SchedulerResourceModel|string|number): SchedulerAssignmentModel[];
-        getEvents(): SchedulerEventModel[];
+        getEvents(): SchedulerEventModel[]|Map<any,any>;
         getEventsByStartDate(startDate: Date): SchedulerEventModel[];
         getEventsForResource(resource: SchedulerResourceModel|string|number): SchedulerEventModel[];
         getEventsInTimeSpan(startDate: Date, endDate: Date, allowPartial?: boolean, onlyAssigned?: boolean): SchedulerEventModel[];
+        getRecurringEvents(): SchedulerEventModel[];
+        getRecurringTimeSpans(): TimeSpan[];
         getResourcesForEvent(event: SchedulerEventModel|string|number): SchedulerResourceModel[];
         getTotalTimeSpan(): object;
-        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel, resource: SchedulerResourceModel): boolean;
+        isDateRangeAvailable(start: Date, end: Date, excludeEvent: SchedulerEventModel|null, resource: SchedulerResourceModel): boolean;
         isEventAssignedToResource(event: SchedulerEventModel|string|number, resource: SchedulerResourceModel|string|number): boolean;
         isEventPersistable(event: SchedulerEventModel): boolean;
+        loadDataAsync(data: object[]): void;
         reassignEventFromResourceToResource(event: SchedulerEventModel, oldResource: SchedulerResourceModel|SchedulerResourceModel[], newResource: SchedulerResourceModel|SchedulerResourceModel[]): void;
         removeAssignmentsForEvent(event: SchedulerEventModel|string|number): void;
         removeAssignmentsForResource(resource: SchedulerResourceModel|string|number): void;
@@ -9912,6 +11062,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         responseDataProperty: string;
         responseSuccessProperty: string;
         responseTotalProperty: string;
+        restfulFilter: string;
         sendAsFormData: boolean;
         sortParamName: string;
         sorters: object[]|string[];
@@ -9925,45 +11076,41 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class ResourceStore extends AjaxStore implements ResourceStoreMixin {        
+    export class ResourceStore extends AjaxStore implements PartOfProject, ResourceStoreMixin {        
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
+        calendarManagerStore: CalendarManagerStore;
+        data: object[];
+        // @ts-ignore
+        dependencyStore: DependencyStore;
+        // @ts-ignore
+        eventStore: EventStore;
+        project: ProjectModel;
+        // @ts-ignore
+        resourceStore: ResourceStore;
+        // @ts-ignore
+        taskStore: EventStore;        
         constructor(config?: Partial<ResourceStoreConfig>);
-    }
-
-    export class ProAssignmentAPI {
-    }
-
-    export class ProDataAPI {        
-        dataApi: object;
-    }
-
-    export class ProDependencyAPI {
-    }
-
-    export class ProEventAPI {
-    }
-
-    export class ProProjectAPI {
-    }
-
-    export class ProResourceAPI {
+        add(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        addAsync(records: SchedulerResourceModel|SchedulerResourceModel[]|object|object[], silent?: boolean): SchedulerResourceModel[];
+        loadDataAsync(data: object[]): void;
     }
 
     export class PartOfProject {        
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
+        project: ProjectModel;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
-        taskStore: EventStore;        
-        getAssignmentStore(): AssignmentStore;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
-        getResourceStore(): ResourceStore;
+        resourceStore: ResourceStore;
+        // @ts-ignore
+        taskStore: EventStore;
     }
 
     type ProjectCrudManagerConfig = {        
@@ -9971,8 +11118,10 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoSync: boolean;
         autoSyncTimeout: number;
         crudStores: Store[]|string[]|object[];
+        listeners: object;
         phantomIdField: string;
         phantomParentIdField: string;
+        project: SchedulerProjectModel;
         resetIdsBeforeSync: boolean;
         storeIdProperty: string;
         syncApplySequence: string[];
@@ -9981,13 +11130,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         writeAllFields: boolean;
     }
 
-    export class ProjectCrudManager implements AbstractCrudManagerMixin, AjaxTransport, JsonEncoder {        
+    export class ProjectCrudManager implements SchedulerProjectCrudManager {        
         crudRevision: number;
         crudStores: object[];
         isCrudManagerLoading: boolean;
         syncApplySequence: object[];        
         constructor(config?: Partial<ProjectCrudManagerConfig>);
         addCrudStore(store: Store|string|object|Store[]|string[]|object[], position?: number, fromStore?: string|Store|object): void;
+        addListener(config: object, thisObj?: object, prio?: number): Function;
         addStoreToApplySequence(store: Store|object|Store[]|object[], position?: number, fromStore?: string|Store|object): void;
         cancelRequest(requestPromise: Promise<any>, reject: Function): void;
         commitCrudStores(): void;
@@ -9997,18 +11147,46 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         encode(request: object): string;
         getCrudStore(storeId: string): Store;
         getStoreDescriptor(storeId: string|Store): object;
+        hasListener(eventName: string): boolean;
         load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
+        on(config: any, thisObj?: any): void;
         rejectCrudStores(): void;
+        relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        removeAllListeners(): void;
         removeCrudStore(store: object|string|Store): void;
+        removeListener(config: object, thisObj: object): void;
         removeStoreFromApplySequence(store: object|string|Store): void;
+        resumeEvents(): void;
         sendRequest(request: object): Promise<any>;
+        suspendEvents(queue?: boolean): void;
         sync(): Promise<any>;
+        trigger(eventName: string, param?: object): boolean;
+        un(config: any, thisObj: any): void;
+    }
+
+    type EventResizeConfig = {        
+        disabled: boolean;
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        showExactResizePosition: boolean;
+        showTooltip: boolean;
+        tip: Tooltip;
+        validatorFn: Function;
+        validatorFnThisObj: object;
+    }
+
+    export class EventResize extends SchedulerEventResize {        
+        constructor(config?: Partial<EventResizeConfig>);
     }
 
     type PercentBarConfig = {        
         allowResize: boolean;
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         showPercentage: boolean;
     }
 
@@ -10019,6 +11197,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type ResourceNonWorkingTimeConfig = {        
         disabled: boolean;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
     }
 
     export class ResourceNonWorkingTime extends ResourceTimeRangesBase {        
@@ -10028,14 +11208,16 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     type TaskEditConfig = {        
         confirmDelete: boolean;
         disabled: boolean;
-        editorClass: Function;
-        editorClassMap: object;
+        editorClass: Widget;
         editorConfig: object;
         items: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         saveAndCloseOnEnter: boolean;
         showDeleteButton: boolean;
         triggerEvent: string;
+        weekStartDay: number;
     }
 
     export class TaskEdit extends InstancePlugin implements ProTaskEditStm, Delayable {        
@@ -10046,7 +11228,36 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
     export class ProTaskEditStm {
     }
 
-    export class AssignmentModel extends SchedulerAssignmentModel {
+    type AssignmentModelConfig = {        
+        drawDependencies: boolean;
+        event: string|number;
+        eventId: string|number;
+        parentId: string|number;
+        parentIndex: number;
+        resource: string|number;
+        resourceId: string|number;
+    }
+
+    export class AssignmentModel extends Model implements AssignmentModelMixin {        
+        drawDependencies: boolean;
+        event: string|number;
+        eventId: string|number;
+        eventName: string;
+        isPersistable: boolean;
+        resource: string|number;
+        resourceId: string|number;
+        resourceName: string;        
+        constructor(config?: Partial<AssignmentModelConfig>);
+        getResource(): SchedulerResourceModel;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
+    }
+
+    type CalendarIntervalModelConfig = {        
+        endDate: Date;
+        isWorking: boolean;
+        recurrentEndDate: string;
+        recurrentStartDate: string;
+        startDate: Date;
     }
 
     export class CalendarIntervalModel {        
@@ -10055,63 +11266,122 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         recurrentEndDate: string;
         recurrentStartDate: string;
         startDate: Date;        
+        constructor(config?: Partial<CalendarIntervalModelConfig>);
         getEndDateSchedule(): object;
         getStartDateSchedule(): object;
         isRecurrent(): boolean;
         isStatic(): boolean;
     }
 
+    type CalendarModelConfig = {        
+        intervals: CalendarIntervalModel[];
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        unspecifiedTimeIsWorking: boolean;
+    }
+
     export class CalendarModel extends Model implements PartOfProject {        
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
+        intervals: CalendarIntervalModel[];
         name: string;
+        project: ProjectModel;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
+        resourceStore: ResourceStore;
+        // @ts-ignore
         taskStore: EventStore;
         unspecifiedTimeIsWorking: boolean;        
+        constructor(config?: Partial<CalendarModelConfig>);
         addInterval(interval: CalendarIntervalModel): void;
         addIntervals(intervals: CalendarIntervalModel[]): void;
-        getAssignmentStore(): AssignmentStore;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
-        getResourceStore(): ResourceStore;
+    }
+
+    type DependencyModelConfig = {        
+        bidirectional: boolean;
+        calendar: CalendarModel;
+        cls: string;
+        from: string|number;
+        fromSide: string;
+        lag: number;
+        lagUnit: string;
+        parentId: string|number;
+        parentIndex: number;
+        to: string|number;
+        toSide: string;
+        type: number;
     }
 
     export class DependencyModel extends DependencyBaseModel implements PartOfProject {        
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
         calendar: CalendarModel;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
+        project: ProjectModel;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
+        resourceStore: ResourceStore;
+        // @ts-ignore
         taskStore: EventStore;        
-        getAssignmentStore(): AssignmentStore;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
-        getResourceStore(): ResourceStore;
+        constructor(config?: Partial<DependencyModelConfig>);
     }
 
-    export class EventModel extends TimeSpan implements EventModelMixin, PercentDoneMixin, PartOfProject {        
+    type EventModelConfig = {        
         allDay: boolean;
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        calendar: CalendarModel;
+        cls: DomClassList|string;
+        constraintDate: Date;
+        constraintType: string;
+        draggable: boolean;
+        duration: number;
+        durationUnit: string;
+        earlyEndDate: Date;
+        earlyStartDate: Date;
+        effort: number;
+        effortUnit: string;
+        endDate: string|Date;
+        eventColor: string;
+        eventStyle: string;
+        exceptionDates: object;
+        iconCls: string;
+        id: string|number;
+        manuallyScheduled: boolean;
+        milestoneWidth: number;
+        name: string;
+        note: string;
+        parentId: string|number;
+        parentIndex: number;
+        percentDone: number;
+        recurrenceRule: string;
+        resizable: boolean|string;
+        resourceId: string|number;
+        showInTimeline: boolean;
+        startDate: string|Date;
+        style: string;
+    }
+
+    export class EventModel extends TimeSpan implements RecurringTimeSpan, EventModelMixin, PercentDoneMixin, PartOfProject {        
+        allDay: boolean;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
         assignments: SchedulerAssignmentModel[];
         calendar: CalendarModel;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
         constraintDate: Date;
         constraintType: string;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
         draggable: boolean;
         earlyEndDate: Date;
         earlyStartDate: Date;
@@ -10119,14 +11389,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         effortUnit: string;
         eventColor: string;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
         eventStyle: string;
+        exceptionDates: object;
         id: string|number;
         isCompleted: boolean;
         isDraggable: boolean;
         isInProgress: boolean;
         isInterDay: boolean;
+        isOccurrence: boolean;
         isPersistable: boolean;
+        isRecurring: boolean;
         isResizable: boolean|string;
         isStarted: boolean;
         manuallyScheduled: boolean;
@@ -10134,86 +11407,185 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         note: string;
         percentDone: number;
         predecessors: EventModel[];
+        project: ProjectModel;
+        recurrence: RecurrenceModel;
+        recurrenceModel: any;
+        recurrenceRule: string;
         resizable: boolean|string;
         resource: SchedulerResourceModel;
         resourceId: string|number;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
+        resourceStore: ResourceStore;
         resources: SchedulerResourceModel[];
         showInTimeline: boolean;
         successors: EventModel[];
+        supportsRecurring: any;
+        // @ts-ignore
         taskStore: EventStore;        
+        constructor(config?: Partial<EventModelConfig>);
         assign(resource: SchedulerResourceModel|string|number, removeExistingAssignments?: boolean): void;
         getAssignmentFor(resource: ResourceModel): AssignmentModel|null;
-        getAssignmentStore(): AssignmentStore;
         getCalendar(): CalendarModel;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
+        getOccurrencesForDateRange(startDate: Date, endDate?: Date): TimeSpan[];
         getResource(resourceId?: string): SchedulerResourceModel;
-        getResourceStore(): ResourceStore;
+        hasException(date: Date): boolean;
         isAssignedTo(resource: SchedulerResourceModel|string|number): boolean;
         reassign(oldResourceId: SchedulerResourceModel|string|number, newResourceId: SchedulerResourceModel|string|number): void;
+        remove(): void;
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         setCalendar(calendar: CalendarModel): Promise<any>;
         setConstraint(constraintType: string, constraintDate?: Date): Promise<any>;
         setDuration(duration: number, unit?: string): Promise<any>;
         setEffort(effort: number, unit?: string): Promise<any>;
         setEndDate(date: Date, keepDuration?: boolean): Promise<any>;
+        setRecurrence(recurrence: object|string|RecurrenceModel, interval?: number, recurrenceEnd?: number|Date): void;
         setStartDate(date: Date, keepDuration?: boolean): Promise<any>;
         shift(unit: string, amount: number): Promise<any>;
         unassign(resource?: SchedulerResourceModel|string|number): void;
     }
 
     type ProjectModelConfig = {        
-        assignmentModelClass: SchedulerAssignmentModel;
-        assignmentStoreClass: SchedulerAssignmentStore;
-        dependencyModelClass: SchedulerDependencyModel;
-        dependencyStoreClass: SchedulerDependencyStore;
-        eventModelClass: SchedulerEventModel;
-        eventStoreClass: SchedulerEventStore;
-        resourceModelClass: SchedulerResourceModel;
-        resourceStoreClass: SchedulerResourceStore;
+        assignmentModelClass: AssignmentModel;
+        assignmentStoreClass: AssignmentStore|object;
+        assignmentsData: SchedulerAssignmentModel[];
+        autoLoad: boolean;
+        autoSync: boolean;
+        autoSyncTimeout: number;
+        calendar: CalendarModel;
+        crudStores: Store[]|string[]|object[];
+        daysPerMonth: number;
+        daysPerWeek: number;
+        dependenciesCalendar: string;
+        dependenciesData: SchedulerDependencyModel[];
+        dependencyModelClass: DependencyModel;
+        dependencyStoreClass: DependencyStore|object;
+        direction: string;
+        eventModelClass: EventModel;
+        eventStoreClass: EventStore|object;
+        eventsData: SchedulerEventModel[];
+        hoursPerDay: number;
+        listeners: object;
+        phantomIdField: string;
+        phantomParentIdField: string;
+        project: SchedulerProjectModel;
+        resetIdsBeforeSync: boolean;
+        resourceModelClass: ResourceModel;
+        resourceStoreClass: ResourceStore|object;
+        resourceTimeRangesData: ResourceTimeRangeModel[];
+        resourcesData: SchedulerResourceModel[];
+        silenceInitialCommit: boolean;
         stm: object|StateTrackingManager;
+        storeIdProperty: string;
+        syncApplySequence: string[];
+        timeRangesData: TimeSpan[];
+        trackResponseType: boolean;
+        transport: object;
+        writeAllFields: boolean;
     }
 
-    export class ProjectModel extends ProjectModelMixin implements PartOfProject {        
+    export class ProjectModel extends ProjectModelMixin implements PartOfProject, ProjectCrudManager, Events {        
         static defaultConfig: any;
-        assignmentStore: AssignmentStore|SchedulerAssignmentStore;
+        // @ts-ignore
+        assignmentStore: AssignmentStore;
         calendar: CalendarModel;
+        // @ts-ignore
         calendarManagerStore: CalendarManagerStore;
+        crudRevision: number;
+        crudStores: object[];
         daysPerMonth: number;
         daysPerWeek: number;
         dependenciesCalendar: string;
         // @ts-ignore
-        dependencyStore: DependencyStore|SchedulerDependencyStore;
+        dependencyStore: DependencyStore;
+        direction: string;
         // @ts-ignore
-        eventStore: EventStore|SchedulerEventStore;
+        eventStore: EventStore;
         hoursPerDay: number;
+        isCrudManagerLoading: boolean;
+        project: ProjectModel;
         // @ts-ignore
-        resourceStore: ResourceStore|SchedulerResourceStore;
+        resourceStore: ResourceStore;
+        syncApplySequence: object[];
+        // @ts-ignore
         taskStore: EventStore;        
         constructor(config?: Partial<ProjectModelConfig>);
-        getAssignmentStore(): AssignmentStore;
-        getCalendarManagerStore(): CalendarManagerStore;
-        getDependencyStore(): DependencyStore;
-        getEventStore(): EventStore;
-        getProject(): ProjectModel;
-        getResourceStore(): ResourceStore;
+        addCrudStore(store: Store|string|object|Store[]|string[]|object[], position?: number, fromStore?: string|Store|object): void;
+        addListener(config: object, thisObj?: object, prio?: number): Function;
+        addStoreToApplySequence(store: Store|object|Store[]|object[], position?: number, fromStore?: string|Store|object): void;
+        cancelRequest(requestPromise: Promise<any>, reject: Function): void;
+        commitCrudStores(): void;
+        crudStoreHasChanges(storeId?: string|Store): boolean;
+        decode(responseText: string): object;
+        doDestroy(): void;
+        encode(request: object): string;
+        getCrudStore(storeId: string): Store;
+        getStoreDescriptor(storeId: string|Store): object;
+        hasListener(eventName: string): boolean;
+        load(options?: object): Promise<any>;
+        loadCrudManagerData(response: object, options?: object): void;
+        on(config: any, thisObj?: any): void;
         propagate(): Promise<any>;
+        rejectCrudStores(): void;
+        relayAll(through: Events, prefix: string, transformCase?: boolean): void;
+        removeAllListeners(): void;
+        removeCrudStore(store: object|string|Store): void;
+        removeListener(config: object, thisObj: object): void;
+        removeStoreFromApplySequence(store: object|string|Store): void;
+        resumeEvents(): void;
+        sendRequest(request: object): Promise<any>;
+        suspendEvents(queue?: boolean): void;
+        sync(): Promise<any>;
+        trigger(eventName: string, param?: object): boolean;
+        un(config: any, thisObj: any): void;
     }
 
-    export class ResourceModel extends SchedulerResourceModel {        
-        calendar: CalendarModel;        
+    type ResourceModelConfig = {        
+        calendar: CalendarModel;
+        cls: string;
+        eventColor: string;
+        eventStyle: string;
+        expanded: boolean;
+        href: string;
+        iconCls: string;
+        id: string|number;
+        image: string;
+        imageUrl: string;
+        name: string;
+        parentId: string|number;
+        parentIndex: number;
+        rowHeight: number;
+        target: string;
+    }
+
+    export class ResourceModel extends GridRowModel implements ResourceModelMixin {        
+        assignments: SchedulerAssignmentModel[];
+        calendar: CalendarModel;
+        eventColor: string;
+        eventStyle: string;
+        events: SchedulerEventModel[];
+        id: string|number;
+        image: string;
+        imageUrl: string;
+        isPersistable: boolean;
+        name: string;        
+        constructor(config?: Partial<ResourceModelConfig>);
         getCalendar(): CalendarModel;
+        getEvents(): SchedulerEventModel[];
+        setAsync(field: string|object, value: any, silent?: boolean): void;
         setCalendar(calendar: CalendarModel): Promise<any>;
+        unassignAll(): void;
+    }
+
+    type PercentDoneMixinConfig = {        
+        percentDone: number;
     }
 
     export class PercentDoneMixin {        
         isCompleted: boolean;
         isInProgress: boolean;
         isStarted: boolean;
-        percentDone: number;
+        percentDone: number;        
+        constructor(config?: Partial<PercentDoneMixinConfig>);
     }
 
     type ResourceHistogramConfig = {        
@@ -10224,13 +11596,14 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
         barTextEffortUnit: string;
         barTipEffortUnit: string;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -10249,7 +11622,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -10273,7 +11646,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -10282,6 +11655,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getBarText: Function;
@@ -10289,10 +11663,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         getDateConstraints: Function;
         getRectClass: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -10308,6 +11684,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -10343,7 +11721,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -10369,15 +11747,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -10403,11 +11785,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -10426,7 +11809,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -10449,7 +11832,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -10458,14 +11841,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -10481,6 +11867,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -10516,7 +11904,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -10539,15 +11927,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -10573,11 +11965,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -10596,7 +11989,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -10619,7 +12012,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -10628,14 +12021,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -10651,6 +12047,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -10686,7 +12084,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -10709,15 +12107,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -10735,7 +12137,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<SchedulerProBaseConfig>);
     }
 
-    export class CalendarField {
+    type CalendarFieldConfig = {        
+        store: CalendarManagerStore;
+    }
+
+    export class CalendarField {        
+        constructor(config?: Partial<CalendarFieldConfig>);
     }
 
     type ConstraintTypePickerConfig = {        
@@ -10750,7 +12157,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -10766,6 +12173,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -10776,9 +12184,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -10793,6 +12204,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -10811,7 +12224,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -10829,7 +12242,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -10856,7 +12269,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -10872,6 +12285,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -10882,9 +12296,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -10899,6 +12316,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -10917,7 +12336,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -10935,7 +12354,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -10977,9 +12396,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -10990,6 +12412,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         magnitude: number;
         margin: number|string;
         maskDefaults: object|Mask;
@@ -11003,7 +12427,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         monitorResize: boolean;
         name: string;
         owner: Widget;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         readOnly: boolean;
@@ -11062,9 +12486,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -11076,6 +12503,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11093,7 +12522,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerFormat: string;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         project: ProjectModel;
@@ -11113,6 +12542,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         tooltip: string|object;
         triggers: object;
         value: string|Date;
+        weekStartDay: number;
         weight: number;
         width: string|number;
         x: number;
@@ -11132,6 +12562,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoClose: boolean;
         autoShow: boolean;
         bbar: object[]|object;
+        calculateMask: string|null;
+        calculateMaskDelay: number|null;
         centered: boolean;
         closable: boolean;
         closeAction: string;
@@ -11145,7 +12577,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         draggable: boolean|object;
         extraItems: object;
-        extraWidgets: string|object[];
         flex: number|string;
         floating: boolean;
         focusOnToFront: boolean;
@@ -11155,6 +12586,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -11166,6 +12598,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11205,7 +12639,116 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<GanttTaskEditorConfig>);
     }
 
-    export class ModelCombo {
+    type ModelComboConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        autoClose: boolean;
+        autoComplete: string;
+        autoExpand: boolean;
+        badge: string;
+        caseSensitive: boolean;
+        centered: boolean;
+        chipView: object;
+        clearTextOnPickerHide: boolean;
+        clearable: boolean|object;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        disabled: boolean;
+        displayField: string;
+        displayValueRenderer: Function;
+        draggable: boolean|object;
+        editable: boolean;
+        emptyText: string;
+        encodeFilterParams: Function;
+        filterOnEnter: boolean;
+        filterOperator: string;
+        filterParamName: string;
+        filterSelected: boolean;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideTrigger: boolean;
+        highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
+        html: string;
+        htmlCls: string;
+        id: string;
+        inputAlign: string;
+        inputAttributes: object;
+        inputWidth: string|number;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        items: object[]|string[]|object;
+        keyStrokeChangeDelay: number;
+        keyStrokeFilterDelay: number;
+        label: string;
+        labelCls: string|object;
+        labelWidth: string|number;
+        labels: object;
+        listCls: string;
+        listItemTpl: Function;
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxLength: number;
+        maxWidth: string|number;
+        minChars: number;
+        minHeight: string|number;
+        minLength: number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        multiSelect: boolean;
+        name: string;
+        overlayAnchor: boolean;
+        owner: Widget;
+        picker: object;
+        pickerAlignElement: string;
+        pickerWidth: number;
+        placeholder: string;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        primaryFilter: object;
+        readOnly: boolean;
+        ref: string;
+        required: boolean;
+        revertOnEscape: boolean;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        store: Store;
+        style: string;
+        tabIndex: number;
+        textAlign: string;
+        title: string;
+        tooltip: string|object;
+        triggerAction: string;
+        triggers: object;
+        validateFilter: boolean;
+        value: string|number[]|string[];
+        valueField: string;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class ModelCombo extends Combo {        
+        constructor(config?: Partial<ModelComboConfig>);
     }
 
     type SchedulerTaskEditorConfig = {        
@@ -11217,6 +12760,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoClose: boolean;
         autoShow: boolean;
         bbar: object[]|object;
+        calculateMask: string|null;
+        calculateMaskDelay: number|null;
         centered: boolean;
         closable: boolean;
         closeAction: string;
@@ -11230,7 +12775,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         draggable: boolean|object;
         extraItems: object;
-        extraWidgets: string|object[];
         flex: number|string;
         floating: boolean;
         focusOnToFront: boolean;
@@ -11240,6 +12784,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -11251,6 +12796,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11302,7 +12849,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         badge: string;
         caseSensitive: boolean;
         centered: boolean;
-        chipView: boolean;
+        chipView: object;
         clearTextOnPickerHide: boolean;
         clearable: boolean|object;
         cls: string|object;
@@ -11318,6 +12865,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         editable: boolean;
         emptyText: string;
         encodeFilterParams: Function;
+        filterOnEnter: boolean;
         filterOperator: string;
         filterParamName: string;
         filterSelected: boolean;
@@ -11328,9 +12876,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hideAnimation: boolean|object;
         hideTrigger: boolean;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -11345,6 +12896,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         listCls: string;
         listItemTpl: Function;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11363,7 +12916,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerWidth: number;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         primaryFilter: object;
@@ -11381,7 +12934,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         textAlign: string;
         title: string;
         tooltip: string|object;
-        triggerAction: object;
+        triggerAction: string;
         triggers: object;
         validateFilter: boolean;
         value: string|number[]|string[];
@@ -11424,9 +12977,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         hidden: boolean;
         hideAnimation: boolean|object;
         highlightExternalChange: boolean;
+        hint: string|Function;
+        hintHtml: string|Function;
         html: string;
         htmlCls: string;
         id: string;
+        inputAlign: string;
         inputAttributes: object;
         inputWidth: string|number;
         insertBefore: HTMLElement|string;
@@ -11438,6 +12994,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         labelWidth: string|number;
         labels: object;
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11455,7 +13013,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         picker: object;
         pickerAlignElement: string;
         pickerFormat: string;
-        placeHolder: string;
+        placeholder: string;
         positioned: boolean;
         preventTooltipOnTouch: boolean;
         project: ProjectModel;
@@ -11475,6 +13033,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         tooltip: string|object;
         triggers: object;
         value: string|Date;
+        weekStartDay: number;
         weight: number;
         width: string|number;
         x: number;
@@ -11494,6 +13053,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         autoClose: boolean;
         autoShow: boolean;
         bbar: object[]|object;
+        calculateMask: string|null;
+        calculateMaskDelay: number|null;
         centered: boolean;
         closable: boolean;
         closeAction: string;
@@ -11507,7 +13068,6 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         disabled: boolean;
         draggable: boolean|object;
         extraItems: object;
-        extraWidgets: string|object[];
         flex: number|string;
         floating: boolean;
         focusOnToFront: boolean;
@@ -11517,6 +13077,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
         html: string;
         htmlCls: string;
         id: string;
@@ -11528,6 +13089,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         layoutStyle: object;
         lazyItems: object|object[]|Widget[];
         listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         margin: number|string;
         maskDefaults: object|Mask;
         masked: boolean|string|object|Mask;
@@ -11577,11 +13140,12 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         anchor: boolean;
         animateRemovingRows: boolean;
         appendTo: HTMLElement|string;
-        assignmentStore: SchedulerAssignmentStore;
+        assignmentStore: SchedulerAssignmentStore|object;
         assignments: SchedulerAssignmentModel[]|object[];
         autoAdjustTimeAxis: boolean;
         autoHeight: boolean;
         barMargin: number;
+        bbar: object[]|object;
         centered: boolean;
         cls: string|object;
         columnLines: boolean;
@@ -11600,7 +13164,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         defaultResourceImageName: string;
         defaults: object;
         dependencies: SchedulerDependencyModel[]|object[];
-        dependencyStore: SchedulerDependencyStore;
+        dependencyStore: SchedulerDependencyStore|object;
         destroyStore: boolean;
         destroyStores: boolean;
         disableGridRowModelWarning: boolean;
@@ -11623,7 +13187,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         eventRenderer: Function;
         eventRendererThisObj: object;
         eventSelectionDisabled: boolean;
-        eventStore: SchedulerEventStore;
+        eventStore: SchedulerEventStore|object;
         eventStyle: string;
         events: SchedulerEventModel[]|object[];
         features: any;
@@ -11632,14 +13196,17 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         fixedRowHeight: boolean;
         flex: number|string;
         floating: boolean;
+        footer: object|string;
         forceFit: boolean;
         fullRowRefresh: boolean;
         getDateConstraints: Function;
         getRowHeight: Function;
+        header: object|string;
         height: string|number;
         hidden: boolean;
         hideAnimation: boolean|object;
         hideHeaders: boolean;
+        hideWhenEmpty: boolean;
         horizontalEventSorterFn: Function;
         html: string;
         htmlCls: string;
@@ -11655,6 +13222,8 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         loadMask: string|null;
         loadMaskDefaults: object|Mask;
         loadMaskError: object|Mask;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
         longPressTime: number;
         maintainSelectionOnDatasetChange: boolean;
         managedEventSizing: boolean;
@@ -11690,7 +13259,7 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         resourceImageExtension: string;
         resourceImagePath: string;
         resourceMargin: number;
-        resourceStore: SchedulerResourceStore;
+        resourceStore: SchedulerResourceStore|object;
         resourceTimeRanges: ResourceTimeRangeModel[]|object[];
         resources: SchedulerResourceModel[]|object[];
         responsiveLevels: object;
@@ -11713,15 +13282,19 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         subGridConfigs: object;
         suppressFit: boolean;
         syncMask: string|null;
+        tbar: object[]|object;
         textAlign: string;
         textContent: boolean;
-        timeAxis: TimeAxis;
+        timeAxis: object|TimeAxis;
         timeRanges: TimeSpan[]|object[];
         title: string;
+        tools: object;
         tooltip: string|object;
         transitionDuration: number;
+        trapFocus: boolean;
         triggerSelectionChangeOnRemove: boolean;
         useInitialAnimation: boolean|string;
+        verticalTimeAxisColumn: object;
         viewPreset: string|object;
         visibleZoomFactor: number;
         weekStartDay: number;
@@ -11739,10 +13312,755 @@ declare module "bryntum-schedulerpro/schedulerpro.umd.js" {
         constructor(config?: Partial<TimelineConfig>);
     }
 
-    export class EventLoader {
+    type AdvancedTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
     }
 
-    export class TaskEditorTab {
+    export class AdvancedTab extends FormTab {        
+        constructor(config?: Partial<AdvancedTabConfig>);
+    }
+
+    type DependencyTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export abstract class DependencyTab extends EditorTab {        
+        constructor(config?: Partial<DependencyTabConfig>);
+    }
+
+    type EditorTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class EditorTab extends Container implements EventLoader {        
+        constructor(config?: Partial<EditorTabConfig>);
+    }
+
+    type FormTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class FormTab extends EditorTab {        
+        constructor(config?: Partial<FormTabConfig>);
+    }
+
+    type GeneralTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class GeneralTab extends FormTab {        
+        constructor(config?: Partial<GeneralTabConfig>);
+    }
+
+    type NotesTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class NotesTab extends FormTab {        
+        constructor(config?: Partial<NotesTabConfig>);
+    }
+
+    type PredecessorsTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class PredecessorsTab extends DependencyTab {        
+        constructor(config?: Partial<PredecessorsTabConfig>);
+    }
+
+    type ResourcesTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class ResourcesTab extends EditorTab {        
+        constructor(config?: Partial<ResourcesTabConfig>);
+    }
+
+    type SchedulerAdvancedTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class SchedulerAdvancedTab extends FormTab {        
+        constructor(config?: Partial<SchedulerAdvancedTabConfig>);
+    }
+
+    type SchedulerGeneralTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class SchedulerGeneralTab extends FormTab {        
+        constructor(config?: Partial<SchedulerGeneralTabConfig>);
+    }
+
+    type SuccessorsTabConfig = {        
+        adopt: HTMLElement|string;
+        align: object|string;
+        alignSelf: string;
+        anchor: boolean;
+        appendTo: HTMLElement|string;
+        centered: boolean;
+        cls: string|object;
+        constrainTo: HTMLElement|Widget|Rectangle;
+        content: string;
+        contentElementCls: string|object;
+        dataset: object;
+        defaultBindProperty: string;
+        defaults: object;
+        disabled: boolean;
+        draggable: boolean|object;
+        flex: number|string;
+        floating: boolean;
+        height: string|number;
+        hidden: boolean;
+        hideAnimation: boolean|object;
+        hideWhenEmpty: boolean;
+        html: string;
+        htmlCls: string;
+        id: string;
+        insertBefore: HTMLElement|string;
+        insertFirst: HTMLElement|string;
+        itemCls: string;
+        items: object|object[]|Widget[];
+        layout: string;
+        layoutStyle: object;
+        lazyItems: object|object[]|Widget[];
+        listeners: object;
+        localeClass: AnyConstructor;
+        localizableProperties: string[];
+        margin: number|string;
+        maskDefaults: object|Mask;
+        masked: boolean|string|object|Mask;
+        maxHeight: string|number;
+        maxWidth: string|number;
+        minHeight: string|number;
+        minWidth: string|number;
+        monitorResize: boolean;
+        namedItems: object;
+        owner: Widget;
+        positioned: boolean;
+        preventTooltipOnTouch: boolean;
+        readOnly: boolean;
+        ref: string;
+        ripple: boolean|object;
+        scrollAction: string;
+        scrollable: boolean|object|Scroller;
+        showAnimation: boolean|object;
+        style: string;
+        textAlign: string;
+        textContent: boolean;
+        title: string;
+        tooltip: string|object;
+        weight: number;
+        width: string|number;
+        x: number;
+        y: number;
+    }
+
+    export class SuccessorsTab extends DependencyTab {        
+        constructor(config?: Partial<SuccessorsTabConfig>);
+    }
+
+    export class EventLoader {
     }
 
 }

@@ -15,5 +15,5 @@
   "main": "schedulerpro.module.js",
   "name": "bryntum-schedulerpro",
   "types": "./schedulerpro.d.ts",
-  "version": "1.0.2"
+  "version": "4.0.0"
 }

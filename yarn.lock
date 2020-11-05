@@ -1843,7 +1843,7 @@ browserslist@^4.0.0, browserslist@^4.12.0, browserslist@^4.3.4:
   version "3.1.6"
 
 "bryntum-schedulerpro@file:./build":
-  version "1.0.2"
+  version "4.0.0"
 
 "bryntum-vue-shared@file:./_vue_shared":
   version "3.1.6"
