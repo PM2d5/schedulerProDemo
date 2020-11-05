@@ -23,6 +23,7 @@
     "core-js": "~3.6.4",
     "cross-env": "^7.0.2",
     "increase-memory-limit": "^1.0.7",
+    "moment": "^2.29.1",
     "vue": "~2.6.10",
     "vue-router": "~3.0.1",
     "vuex": "~3.0.1"

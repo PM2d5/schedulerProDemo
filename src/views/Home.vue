@@ -17,14 +17,66 @@
     // import Scheduler from 'bryntum-vue-shared/src/Scheduler.vue';
     import Scheduler from '../components/_vue_shared/src/Scheduler';
     import schedulerConfig from '@/components/scheduler/schedulerConfig.js';
-    import {DateHelper} from 'bryntum-schedulerpro';;
+    import {DateHelper} from 'bryntum-schedulerpro';
+    import moment, { duration } from 'moment'
 
+    const modelAndLine = [
+        {model: "0536-J1-DF",productLine: "2#",capacity: 1000},
+        {model: "0536-J1-DF",productLine: "3#",capacity: 750},
+        {model: "0536-J1-DF",productLine: "5#",capacity: 600},
+        {model: "0536-J1-DF",productLine: "11#",capacity: 450},
+
+        {model: "7002-DF(JR-70)",productLine: "2#",capacity: 600},
+        {model: "7002-DF(JR-70)",productLine: "3#",capacity: 800},
+        {model: "7002-DF(JR-70)",productLine: "6#",capacity: 950},
+        {model: "7002-DF(JR-70)",productLine: "10#",capacity: 1050},
+        {model: "7002-DF(JR-70)",productLine: "11#",capacity: 900},
+        {model: "7002-DF(JR-70)",productLine: "12#",capacity: 1250},
+
+        {model: "R2I-00030(91A)",productLine: "11#",capacity: 550},
+        {model: "R2I-00030(91A)",productLine: "12#",capacity: 675},
+        {model: "R2I-00030(91A)",productLine: "21#",capacity: 750},
+        {model: "R2I-00030(91A)",productLine: "22#",capacity: 425},
+
+        {model: "R2I-00027(91A)",productLine: "2#",capacity: 600},
+        {model: "R2I-00027(91A)",productLine: "6#",capacity: 450},
+        {model: "R2I-00027(91A)",productLine: "10#",capacity: 600},
+        {model: "R2I-00027(91A)",productLine: "21#",capacity: 675},
+        {model: "R2I-00027(91A)",productLine: "22#",capacity: 750},
+
+        {model: "7001-DF(DSCL02-0009)",productLine: "6#",capacity: 1050},
+        {model: "7001-DF(DSCL02-0009)",productLine: "10#",capacity: 900},
+        {model: "7001-DF(DSCL02-0009)",productLine: "11#",capacity: 1250},
+        {model: "7001-DF(DSCL02-0009)",productLine: "12#",capacity: 675},
+
+        {model: "TY-202",productLine: "2#",capacity: 1250},
+        {model: "TY-202",productLine: "12#",capacity: 1400},
+
+        {model: "V-90-LF(耐晒等级8级)",productLine: "3#",capacity: 600},
+        {model: "V-90-LF(耐晒等级8级)",productLine: "5#",capacity: 675},
+        {model: "V-90-LF(耐晒等级8级)",productLine: "6#",capacity: 750},
+        {model: "V-90-LF(耐晒等级8级)",productLine: "10#",capacity: 1050},
+
+        {model: "J-70",productLine: "2#",capacity: 800},
+        {model: "J-70",productLine: "3#",capacity: 950},
+        {model: "J-70",productLine: "5#",capacity: 1050},
+        {model: "J-70",productLine: "6#",capacity: 900},
+        {model: "J-70",productLine: "10#",capacity: 600},
+        {model: "J-70",productLine: "11#",capacity: 675},
+        {model: "J-70",productLine: "12#",capacity: 750},
+        {model: "J-70",productLine: "21#",capacity: 1050},
+        {model: "J-70",productLine: "22#",capacity: 500},
+
+        {model: "7029",productLine: "12#",capacity: 900},
+        {model: "7029",productLine: "21#",capacity: 1200}
+    ];
     // export home view
     export default {
         name: 'home',
         data() {
             return {
                 schedulerConfig,
+                modelAndLine,
                 storedOriginalColors : false,
                 storedOriginalStyles : false
             }
@@ -42,10 +94,52 @@
                 add: this.onDependencyAdd
             })
 
-            // scheduler.on('eventDrop',this.onEventDrop);
+            scheduler.on('eventDrop',this.onEventDrop);
             scheduler.on({
                 eventDrop: this.onEventDrop,
             })
+
+            // 初始化events位置
+            setTimeout(()=>{
+                let timeAxis = this.$refs.scheduler.schedulerInstance.timeAxis;
+                let events = this.$refs.scheduler.schedulerInstance.eventStore.allRecords;
+                console.log("events",events);
+                console.log("timeAxis",timeAxis);
+                let resources = this.$refs.scheduler.schedulerInstance.resourceStore.allRecords;
+                console.log("resources",resources);
+                for (let i in resources){
+                    let eventArr = events.filter(o=>o.resourceId==resources[i].id);
+                    if (eventArr.length == 0){
+                        continue;
+                    }
+                    // 按照交货时间反向排序,交货时间晚的放在甘特图的最后
+                    eventArr.sort((b,a)=>DateHelper.compare(DateHelper.parse(a.deliveryDate,'YYYY-MM-DD'),DateHelper.parse(b.deliveryDate,'YYYY-MM-DD')));
+                    let endDate = timeAxis.endDate;
+                    let startDate = timeAxis.startDate;
+                    for (let j in eventArr){
+                        let match = this.modelAndLine.find(o=>o.productLine==eventArr[j].productLine&&o.model==eventArr[j].model);
+                        console.log("match",match)
+                        let duration;
+                        if (match!=null){
+                            duration = eventArr[j].num/match.capacity;
+                            duration = Math.round(duration*100,2)/100;
+                            eventArr[j].startDate = DateHelper.add(endDate,-duration,"hour");
+                            eventArr[j].endDate = endDate;
+                            eventArr[j].name = eventArr[j].client+" "+eventArr[j].model;
+                            endDate = DateHelper.add(eventArr[j].startDate,-eventArr[j].prepareTime,"minute");
+                            
+                        } else {
+                            duration = 0;
+                            eventArr[j].startDate = DateHelper.add(startDate,1,"hour");
+                            eventArr[j].endDate = eventArr[j].startDate;
+                            eventArr[j].name = eventArr[j].client+" "+eventArr[j].model;
+                            startDate = DateHelper.add(eventArr[j].startDate,1,'hour');
+                        }
+                        console.log("duration",duration)
+                        console.log(eventArr[j]);
+                    }
+                }
+            },1000)
         },
         methods : {
             handleMutation(mutation) {
@@ -95,7 +189,8 @@
                 let events = this.$refs.scheduler.schedulerInstance.eventStore.allRecords;
                 let eventStore = this.$refs.scheduler.schedulerInstance.eventStore;
                 let dependencies = this.$refs.scheduler.schedulerInstance.dependencyStore;
-                console.log(dependencies);
+                let timeAxis = this.$refs.scheduler.schedulerInstance.timeAxis;
+                console.log(events);
             },
 
             // 关联工序的开始时间不能早于上一道工序的开始时间
@@ -117,6 +212,18 @@
                 let eventsSameRes = events.filter(item=>item.resourceId == context.newResource.id); // 同一行的event
                 
                 let draggedEvent = events.filter(item=>item.id == context.draggedRecords[0].id)[0]; // 被拖拽工序
+                // ***********如果拖动到新的插线，根据产能重新计算新的时长*********
+                if (context.resourceRecord.id != context.newResource.id){
+                    let match = this.modelAndLine.find(o=>o.model==draggedEvent.model&&o.productLine==context.newResource.name);
+                    if (match!=null){
+                        let newDuration = Math.round(draggedEvent.num/match.capacity/24*100,2)/100;
+                        draggedEvent.duration = newDuration;
+                    } else { // 灭有匹配的产能，时长设为0
+                        draggedEvent.duration = 0;
+                    }
+                }
+
+                //**************end***************
 
                 // 将同行有关联的工序的lag设置为准备时间，不同行的lag还是改为上道工序的duration
                 let sameRowDependencies = dependencies.filter(item=>item.fromEvent.resourceId==item.toEvent.resourceId);

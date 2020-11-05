@@ -3,7 +3,7 @@
  -->
 <template>
     <div id="app">
-        <demo-header title="demo" />
+        <demo-header title="中联demo" />
         <keep-alive>
             <router-view/>
         </keep-alive>

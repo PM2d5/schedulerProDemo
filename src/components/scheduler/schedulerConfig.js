@@ -2,14 +2,16 @@
  *- Configuration for the scheduler
  */
 import {SchedulerPro,DateHelper, EventStore, DependencyStore} from 'bryntum-schedulerpro';;
+import moment from 'moment'
+
 
 export default {
 
     minHeight        : '20em',
-    startDate        : new Date(2020, 9, 27, 0),
-    endDate          : new Date(2020, 9, 29, 0),
-    // startDate  : '2020-03-23',
-    // endDate    : '2020-03-24',
+    startDate        : moment().subtract(12,'hour').format("YYYY-MM-DD HH:mm"),
+    endDate          : moment().add(48,'hour').format("YYYY-MM-DD HH:mm"),
+    // startDate  : '2020-03-23 12:00',
+    // endDate    : '2020-03-24 8:00',
     // viewPreset       : 'hourAndDay',
     viewPreset                : {
         displayDateFormat : 'H:mm',
@@ -34,7 +36,7 @@ export default {
         ]
     },
     barMargin        : 5,
-    rowHeight        : 50,
+    rowHeight        : 70,
     multiEventSelect : true,
     zoomOnMouseWheel: false,
     zoomOnTimeAxisDoubleClick: false,
@@ -84,10 +86,10 @@ export default {
 
     columns : [
         {
-            text       : '工作中心 A',
+            text       : '工作中心-挤出',
             field      : 'name',
             htmlEncode : false,
-            width      : 120,
+            width      : 110,
             renderer   : ({ record }) => `<div class="color-box b-sch-${record.name.toLowerCase()}"></div>${record.name}`
         }
     ],
