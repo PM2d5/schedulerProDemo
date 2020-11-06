@@ -17,8 +17,9 @@
     // import Scheduler from 'bryntum-vue-shared/src/Scheduler.vue';
     import Scheduler from '../components/_vue_shared/src/Scheduler';
     import schedulerConfig from '@/components/scheduler/schedulerConfig.js';
-    import {DateHelper} from 'bryntum-schedulerpro';
+    import {DateHelper, LocaleManager} from 'bryntum-schedulerpro';
     import moment, { duration } from 'moment'
+    import Ru from '../components/schedulerpro.locale.En'
 
     const modelAndLine = [
         {model: "0536-J1-DF",productLine: "2#",capacity: 1000},
@@ -71,7 +72,7 @@
         {model: "7029",productLine: "21#",capacity: 1200}
     ];
 
-    const colors = ['red','pink','purple','violet','indigo','blue','green','lime','orange','deep-orange','gantt-green'];
+    const colors = ['red','pink','purple','violet','indigo','blue','cyan','green','lime','yellow','orange','deep-orange','gantt-green'];
     // export home view
     export default {
         name: 'home',
@@ -90,6 +91,8 @@
 
         mounted() {
             this.$store.subscribe(this.handleMutation)
+
+            LocaleManager.locale = Ru;
 
             const scheduler = this.$refs.scheduler.schedulerInstance;
 
@@ -201,7 +204,7 @@
                 let record = records[0];
                 let lag = 0-record.fromEvent.duration;
                 record.lag = lag;
-                record.lagUnit = "day";
+                record.lagUnit = "hour";
                 let events = this.$refs.scheduler.schedulerInstance.eventStore.allRecords;
                 let event = events.filter(item=>item.id == record.toEvent.id)[0];
                 event.startDate = record.toEvent.startDate;
@@ -219,15 +222,15 @@
                 // ***********如果拖动到新的插线，根据产能重新计算新的时长*********
                 if (context.resourceRecord.id != context.newResource.id){
                     let match = this.modelAndLine.find(o=>o.model==draggedEvent.model&&o.productLine==context.newResource.name);
+                    draggedEvent.productLine = context.newResource.name;
                     if (match!=null){
-                        let newDuration = Math.round(draggedEvent.num/match.capacity/24*100,2)/100;
+                        let newDuration = Math.round(draggedEvent.num/match.capacity*100,2)/100;
                         draggedEvent.duration = newDuration;
                         console.log("newDuration",newDuration)
                     } else { // 灭有匹配的产能，时长设为0
                         draggedEvent.duration = 0;
                     }
                 }
-
                 //**************end***************
 
                 // 将同行有关联的工序的lag设置为准备时间，不同行的lag还是改为上道工序的duration
@@ -242,7 +245,7 @@
                 if (diffRowDependencies.length>0){
                     for (let i in diffRowDependencies){
                         diffRowDependencies[i].lag = 0 - diffRowDependencies[i].fromEvent.duration;
-                        diffRowDependencies[i].lagUnit = "day"
+                        diffRowDependencies[i].lagUnit = "hour"
                     }
                 }
                 eventsSameRes.sort((a,b)=>DateHelper.compare(a.startDate,b.startDate)); // 按时间正向排序
@@ -277,7 +280,7 @@
                         }
                         draggedEvent.startDate = endPlusPrepare;
                         context.startDate = endPlusPrepare;
-                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'hours')
                         pushTimes++;
                         console.log(1)
                     } 
@@ -294,7 +297,7 @@
                         }
                         draggedEvent.startDate = endPlusPrepare;
                         context.startDate = endPlusPrepare;
-                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
+                        context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'hours')
                         pushTimes++;
                         console.log(2)
                     }
@@ -303,6 +306,7 @@
                         draggedEvent.startDate = context.origStart;
                         draggedEvent.duration = oldDuration;
                         draggedEvent.resource = resources.find(o=>o.id==context.resourceRecord.id);
+                        draggedEvent.productLine = draggedEvent.resource.name;
                         console.log("draggedEvent",draggedEvent)
                     }
                     
@@ -321,16 +325,16 @@
                     let startMinusPrepare = DateHelper.add(eventsSameRes[i].startDate,eventsSameRes[i].prepareTime?-eventsSameRes[i].prepareTime:0,'minutes')
                     if (pullTimes == 0){ // 第一次只要判断被拖拽工序的结束时间是否在重叠工序的准备时间以内
                         if (DateHelper.betweenLesser(context.endDate,startMinusPrepare,eventsSameRes[i].startDate)){
-                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
-                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
+                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'hours');
+                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'hours');
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'hours')
                             pullTimes++;
                         }
                     } else { // 第二次以后要判断重叠工序的结束时间是否在被拖拽工序的准备时间以内，是的话还是往回拉
                         if (DateHelper.intersectSpans(context.startDate,context.endDate,eventsSameRes[i].startDate,endPlusPrepare)){
-                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
-                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'days');
-                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'days')
+                            draggedEvent.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'hours');
+                            context.startDate = DateHelper.add(startMinusPrepare,-draggedEvent.duration,'hours');
+                            context.endDate = DateHelper.add(context.startDate,draggedEvent.duration,'hours')
                             pullTimes++;
                         }
                     }
@@ -339,6 +343,7 @@
                         draggedEvent.startDate = context.origStart;
                         draggedEvent.duration = oldDuration;
                         draggedEvent.resource = resources.find(o=>o.id==context.resourceRecord.id);
+                        draggedEvent.productLine = draggedEvent.resource.name;
                         console.log("draggedEvent",draggedEvent)
                     }
                 }

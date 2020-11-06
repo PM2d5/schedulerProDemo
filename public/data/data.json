@@ -23,13 +23,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "0536-J1-DF",
-                "eventColor" : "red",
                 "num": 1000,
                 "batchCode": 20110652,
                 "vanNum": 2,
                 "deliveryDate": "2020-11-21", 
                 "productLine": "3#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 2,
@@ -38,13 +38,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "0536-J1-DF",
-                "eventColor" : "red",
                 "num": 2000,
                 "batchCode": 20116511,
                 "vanNum": 4,
                 "deliveryDate": "2020-11-25", 
                 "productLine": "3#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 3,
@@ -53,13 +53,13 @@
                 "endDate"   : "",
                 "client": "上海金丰电缆",
                 "model": "7002-DF(JR-70)",
-                "eventColor" : "red",
                 "num": 5000,
                 "batchCode": 20110662,
                 "vanNum": 10,
                 "deliveryDate": "2020-11-23", 
                 "productLine": "11#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 4,
@@ -68,13 +68,13 @@
                 "endDate"   : "",
                 "client": "上海金丰电缆",
                 "model": "7002-DF(JR-70)",
-                "eventColor" : "red",
                 "num": 6500,
                 "batchCode": 20110661,
                 "vanNum": 5,
                 "deliveryDate": "2020-11-30", 
                 "productLine": "11#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 5,
@@ -83,13 +83,13 @@
                 "endDate"   : "",
                 "client": "百得利（宁波）",
                 "model": "R2I-00030(91A)",
-                "eventColor" : "red",
                 "num": 3600,
                 "batchCode": 20110672,
                 "vanNum": 19,
                 "deliveryDate": "2020-11-26", 
                 "productLine": "21#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 6,
@@ -98,13 +98,13 @@
                 "endDate"   : "",
                 "client": "百得利（宁波）",
                 "model": "R2I-00030(91A)",
-                "eventColor" : "red",
                 "num": 3500,
                 "batchCode": 20110673,
                 "vanNum": 19,
                 "deliveryDate": "2020-11-26", 
                 "productLine": "未分配",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 7,
@@ -113,13 +113,13 @@
                 "endDate"   : "",
                 "client": "山东华凌",
                 "model": "J-70",
-                "eventColor" : "red",
                 "num": 8000,
                 "batchCode": 20110588,
                 "vanNum": 38,
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 8,
@@ -128,13 +128,13 @@
                 "endDate"   : "",
                 "client": "宝胜科技",
                 "model": "J-70",
-                "eventColor" : "red",
                 "num": 10000,
                 "batchCode": 20110566,
                 "vanNum": 46,
                 "deliveryDate": "2020-11-26", 
                 "productLine": "5#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 9,
@@ -143,13 +143,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "J-70",
-                "eventColor" : "red",
                 "num": 2200,
                 "batchCode": 20110567,
                 "vanNum": 21,
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 10,
@@ -158,13 +158,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "J-70",
-                "eventColor" : "red",
                 "num": 4800,
                 "batchCode": 20110568,
                 "vanNum": 45,
                 "deliveryDate": "2020-11-28", 
                 "productLine": "5#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 11,
@@ -173,13 +173,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "7029",
-                "eventColor" : "red",
                 "num": 5000,
                 "batchCode": 20110569,
                 "vanNum": 51,
                 "deliveryDate": "2020-11-30", 
                 "productLine": "未分配",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 12,
@@ -188,13 +188,13 @@
                 "endDate"   : "",
                 "client": "江苏中利集团",
                 "model": "7029",
-                "eventColor" : "red",
                 "num": 6000,
                 "batchCode": 20110570,
                 "vanNum": 58,
                 "deliveryDate": "2020-11-30", 
                 "productLine": "未分配",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 13,
@@ -203,13 +203,13 @@
                 "endDate"   : "",
                 "client": "上海金丰电缆",
                 "model": "V-90-LF(耐晒等级8级)",
-                "eventColor" : "red",
                 "num": 7500,
                 "batchCode": 20110571,
                 "vanNum": 66,
                 "deliveryDate": "2020-12-03", 
                 "productLine": "6#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 14,
@@ -218,13 +218,13 @@
                 "endDate"   : "",
                 "client": "上海金丰电缆",
                 "model": "V-90-LF(耐晒等级8级)",
-                "eventColor" : "red",
                 "num": 4200,
                 "batchCode": 20110572,
                 "vanNum": 35,
                 "deliveryDate": "2020-12-05", 
                 "productLine": "6#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 15,
@@ -233,13 +233,13 @@
                 "endDate"   : "",
                 "client": "上海金丰电缆",
                 "model": "V-90-LF(耐晒等级8级)",
-                "eventColor" : "red",
                 "num": 800,
                 "batchCode": 20110573,
                 "vanNum": 1,
                 "deliveryDate": "2020-12-06", 
                 "productLine": "6#",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 16,
@@ -248,13 +248,13 @@
                 "endDate"   : "",
                 "client": "山东华凌",
                 "model": "TY-202",
-                "eventColor" : "red",
                 "num": 1200,
                 "batchCode": 20110574,
                 "vanNum": 1,
                 "deliveryDate": "2020-12-11", 
                 "productLine": "未分配",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             },
             {
                 "id": 17,
@@ -263,13 +263,13 @@
                 "endDate"   : "",
                 "client": "浙江大顺电线",
                 "model": "7001-DF(DSCL02-0009)",
-                "eventColor" : "red",
                 "num": 5000,
                 "batchCode": 20110674,
                 "vanNum": 51,
                 "deliveryDate": "2020-12-11", 
                 "productLine": "未分配",
-                "prepareTime": 30
+                "prepareTime": 30,
+                "durationUnit": "h"
             }
         ]
     },

@@ -12,7 +12,9 @@
 
 <script>
     // Stockholm theme
-    import 'bryntum-schedulerpro/schedulerpro.stockholm.css';
+    // import 'bryntum-schedulerpro/schedulerpro.stockholm.css';
+    import 'bryntum-schedulerpro/schedulerpro.material.css';
+    // import 'bryntum-schedulerpro/schedulerpro.classic.css';
     import 'bootstrap/scss/bootstrap.scss';
     // Bootstrap css forces page and body size
     // https://github.com/twbs/bootstrap/issues/25629

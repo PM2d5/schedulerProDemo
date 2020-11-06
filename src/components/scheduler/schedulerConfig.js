@@ -48,40 +48,87 @@ export default {
         // eventDrag : {
         //     constrainDragToResource : true
         // },
+        scheduleContextMenu: {
+            items: {
+                addEvent: false
+            },
+        },
+        
         eventDragCreate: false,
         dependencies: true,
         dependencyEdit: true,
         // nonWorkingTime : true,
         eventTooltip : {
             template : data => {
-                const task = data.eventRecord;
+                const event = data.eventRecord;
                 return `
-                    ${task.name ? `<div class="b-sch-event-title">${task.name}</div>` : ''}
+                    <div>
+                        <span class="b-sch-event-title">客户：</span>
+                        <span>${event.client}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">规格：</span>
+                        <span>${event.model}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">数量：</span>
+                        <span>${event.num}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">批号：</span>
+                        <span>${event.batchCode}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">车数：</span>
+                        <span>${event.vanNum}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">交货日期：</span>
+                        <span>${event.deliveryDate}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">产线：</span>
+                        <span>${event.productLine}</span>
+                    </div>
+                    <div>
+                        <span class="b-sch-event-title">准备时间：</span>
+                        <span>${event.prepareTime}分钟</span>
+                    </div>
                     ${data.startClockHtml}
                     ${data.endClockHtml}
-                    ${(task.dragValidationText || task.resizeValidationText) ? `<div class="restriction-title"><b>Restrictions:</b></div>
-                    <ul class="restriction-list">
-                        ${task.dragValidationText ? `<li>${task.dragValidationText}</li>` : ''}
-                        ${task.resizeValidationText ? `<li>${task.resizeValidationText}</li>` : ''}
-                    </ul>` : ''}
                 `;
             }
         },
-        eventDrag : {
-            validatorFn({ draggedRecords, newResource }) {
-                const
-                    task    = draggedRecords[0],
-                    isValid = task.type === 'Fixed' ||
-                        // Only C-suite people can play Golf
-                        (task.type === 'Golf' && ['CEO', 'CTO'].includes(newResource.role)) ||
-                        // Tasks that have type defined cannot be assigned to another resource type
-                        !(task.type && newResource.role !== task.resource.role);
-                return {
-                    valid   : newResource.available && isValid,
-                    message : !newResource.available ? newResource.statusMessage : (!isValid ? task.dragValidationText : '')
-                };
-            },
-        },
+        taskEdit :{
+            items:{
+                generalTab: {
+                    items: {
+                        nameField: false,
+                        resourcesField: false,
+                        percentDoneField: false
+                    }
+                },
+                advancedTab: false,
+                notesTab: false,
+                predecessorsTab: false,
+                successorsTab: false
+            }
+        }
+        // eventDrag : {
+        //     validatorFn({ draggedRecords, newResource }) {
+        //         const
+        //             task    = draggedRecords[0],
+        //             isValid = task.type === 'Fixed' ||
+        //                 // Only C-suite people can play Golf
+        //                 (task.type === 'Golf' && ['CEO', 'CTO'].includes(newResource.role)) ||
+        //                 // Tasks that have type defined cannot be assigned to another resource type
+        //                 !(task.type && newResource.role !== task.resource.role);
+        //         return {
+        //             valid   : newResource.available && isValid,
+        //             message : !newResource.available ? newResource.statusMessage : (!isValid ? task.dragValidationText : '')
+        //         };
+        //     },
+        // },
     },
 
     columns : [
@@ -89,7 +136,7 @@ export default {
             text       : '工作中心-挤出',
             field      : 'name',
             htmlEncode : false,
-            width      : 110,
+            width      : 115,
             renderer   : ({ record }) => `<div class="color-box b-sch-${record.name.toLowerCase()}"></div>${record.name}`
         }
     ],
