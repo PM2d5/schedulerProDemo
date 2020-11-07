@@ -8,10 +8,10 @@ import moment from 'moment'
 export default {
 
     minHeight        : '20em',
-    startDate        : moment().subtract(12,'hour').format("YYYY-MM-DD HH:mm"),
-    endDate          : moment().add(48,'hour').format("YYYY-MM-DD HH:mm"),
-    // startDate  : '2020-03-23 12:00',
-    // endDate    : '2020-03-24 8:00',
+    // startDate        : moment().subtract(12,'hour').format("YYYY-MM-DD HH:mm"),
+    // endDate          : moment().add(48,'hour').format("YYYY-MM-DD HH:mm"),
+    startDate  : '2020-11-17 20:00',
+    endDate    : '2020-11-20 08:00',
     // viewPreset       : 'hourAndDay',
     viewPreset                : {
         displayDateFormat : 'H:mm',

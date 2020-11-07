@@ -131,9 +131,20 @@
                         if (match!=null){
                             duration = eventArr[j].num/match.capacity;
                             duration = Math.round(duration*100,2)/100;
-                            eventArr[j].startDate = DateHelper.add(endDate,-duration,"hour");
-                            eventArr[j].endDate = endDate;
-                            endDate = DateHelper.add(eventArr[j].startDate,-eventArr[j].prepareTime,"minute");
+                            if (eventArr[j].startDate==null){
+                                // 没有默认开始时间，带排产的工序
+                                eventArr[j].startDate = DateHelper.add(endDate,-duration,"hour");
+                                eventArr[j].endDate = endDate;
+                                endDate = DateHelper.add(eventArr[j].startDate,-eventArr[j].prepareTime,"minute");
+                            } else {
+                                // 有默认开始时间的，无法拖动修改时长
+                                eventArr[j].duration = duration;
+                                eventArr[j].draggable = false;
+                                eventArr[j].resizable = false;
+                                eventArr[j].taskEditable = false;
+                                eventArr[j].eventColor = "gray";
+                            }
+                            
                         } else {
                             duration = 0;
                             eventArr[j].startDate = DateHelper.add(endDate,-1,"hour");
