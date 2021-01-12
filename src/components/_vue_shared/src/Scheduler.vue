@@ -225,6 +225,9 @@
             // Create a Bryntum Grid with props as configs
             this.schedulerInstance = new SchedulerPro(config);
 
+            localStorage.setItem('b-schedulerpro-trial-start', new Date().getTime())
+            localStorage.setItem("b-schedulerpro-verify-date", "2524894509445");
+
         }, // eo function mounted
 
         // cleanup before destroy

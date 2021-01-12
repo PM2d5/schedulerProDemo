@@ -382,6 +382,9 @@
   text-rendering: auto;
   line-height: 1;
 }
+.b-grid-subgrid.b-grid-subgrid-normal.b-grid-horizontal-scroller.b-widget.b-subgrid.b-resize-monitored.b-widget-scroller.b-timeline-subgrid{
+    background-image: none !important;
+}
 </style>
 
 <!-- eof -->
